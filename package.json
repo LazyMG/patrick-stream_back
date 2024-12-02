@@ -5,12 +5,15 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon --exec ts-node index.ts"
+    "start": "nodemon --exec ts-node src/init.ts"
   },
   "author": "lazy-mg",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.21.1"
+    "express": "^4.21.1",
+    "dotenv": "^16.4.5",
+    "mongoose": "^8.2.3",
+    "bcryptjs": "^2.4.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
