@@ -11,7 +11,7 @@ interface IAlbum extends Document {
   followers: Array<Types.ObjectId>;
   total_duration?: number;
   length: number;
-  coverImage: string;
+  coverImg: string;
   created_at: Date;
 }
 
@@ -34,7 +34,7 @@ const AlbumSchema: Schema = new Schema({
   ],
   total_duration: { type: Number, default: 0 },
   length: { type: Number, required: true },
-  coverImage: { type: String, required: true },
+  coverImg: { type: String, required: true },
   created_at: { type: Date, default: Date.now() },
 });
 

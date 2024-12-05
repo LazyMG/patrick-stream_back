@@ -1,4 +1,5 @@
 import express, { Express } from "express";
+import cors from "cors";
 
 import { musicRouter } from "./router/musicRouter";
 import { userRouter } from "./router/userRouter";
@@ -12,6 +13,13 @@ const app: Express = express();
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
 app.use("/user", userRouter);
 app.use("/music", musicRouter);

@@ -15,8 +15,18 @@ interface IMusic extends Document {
   ytId: string;
   comments?: Array<Types.ObjectId>;
   released_at: string;
-  genre: Array<"Pop" | "Rock" | "Jazz" | "Classical" | "Other">;
-  coverImage: string;
+  genre: Array<
+    | "Solo"
+    | "Group"
+    | "Man"
+    | "Woman"
+    | "Dance"
+    | "Pop"
+    | "Ballad"
+    | "Hiphop"
+    | "Band"
+  >;
+  coverImg: string;
   created_at: Date;
 }
 
@@ -39,8 +49,9 @@ const MusicSchema: Schema = new Schema({
     { type: mongoose.Schema.Types.ObjectId, ref: "PSComment", default: [] },
   ],
   released_at: { type: String, required: true },
-  coverImage: { type: String, required: true },
+  coverImg: { type: String, required: true },
   created_at: { type: Date, default: Date.now() },
+  genre: [{ type: String, required: true }],
 });
 
 const Music = mongoose.model<IMusic>("PSMusic", MusicSchema);

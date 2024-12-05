@@ -1,5 +1,5 @@
 import "dotenv/config";
-// import "./db";
+import "./db";
 import app from "./server";
 
 const port = 5000;

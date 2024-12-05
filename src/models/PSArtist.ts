@@ -9,7 +9,7 @@ interface IArtist extends Document {
   debut_at: string;
   country: string;
   followers?: Array<Types.ObjectId>;
-  coverImage: string;
+  coverImg: string;
   created_at: Date;
 }
 
@@ -30,7 +30,7 @@ const ArtistSchema: Schema = new Schema({
   followers: [
     { type: mongoose.Schema.Types.ObjectId, ref: "PSUser", default: [] },
   ],
-  coverImage: { type: String, required: true },
+  coverImg: { type: String, required: true },
   created_at: { type: Date, default: Date.now() },
 });
 

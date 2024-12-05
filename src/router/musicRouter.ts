@@ -1,5 +1,10 @@
 import express from "express";
-import { uploadMusic } from "../controller/musicController";
+import {
+  getAllMusics,
+  getMusic,
+  getMusicsCount,
+  uploadMusic,
+} from "../controller/musicController";
 
 export const musicRouter = express.Router();
 
@@ -13,7 +18,12 @@ musicRouter.get("/trending", () => {});
 musicRouter.get("/recently-updated", () => {});
 
 // 모든 음악
-musicRouter.get("/", () => {});
+musicRouter.get("/", getAllMusics);
+
+// 모든 음악 수
+musicRouter.get("/count", getMusicsCount);
 
 // 음악 등록
 musicRouter.post("/", uploadMusic);
+
+musicRouter.get("/:musicId", getMusic);
