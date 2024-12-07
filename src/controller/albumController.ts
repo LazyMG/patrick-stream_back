@@ -56,7 +56,6 @@ export const getAllAlbums = async (req: Request, res: Response) => {
     console.log(error);
     res.status(400).send({ ok: false, message: "Get All Albums Failed" });
   }
-  console.log(allAlbums);
   res
     .status(200)
     .send({ ok: true, message: "Get All Albums Success", allAlbums });
@@ -75,4 +74,30 @@ export const getAlbum = async (req: Request, res: Response) => {
   }
 
   res.status(200).send({ ok: true, message: "Get Album Success", album });
+};
+
+export const getAlbumMusics = async (req: Request, res: Response) => {
+  const { albumId } = req.params;
+
+  let musics = [];
+
+  try {
+    const album = await Album.findById(albumId);
+    musics = album.musics;
+  } catch (error) {
+    console.log(error);
+    res.status(400).send({ ok: false, message: "Get Album Musics Failed" });
+  }
+
+  res
+    .status(200)
+    .send({ ok: true, message: "Get Album Musics Success", musics });
+};
+
+export const addMusic = async (req: Request, res: Response) => {
+  console.log("앨범에 음악 추가");
+};
+
+export const deleteMusic = async (req: Request, res: Response) => {
+  console.log("앨범에서 음악 삭제");
 };

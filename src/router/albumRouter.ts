@@ -1,6 +1,9 @@
 import express from "express";
 import {
+  addMusic,
+  deleteMusic,
   getAlbum,
+  getAlbumMusics,
   getAlbumsCount,
   getAllAlbums,
   uploadAlbum,
@@ -14,4 +17,7 @@ albumRouter.get("/", getAllAlbums);
 
 albumRouter.get("/count", getAlbumsCount);
 
+albumRouter.post("/:albumId/music", addMusic);
+albumRouter.delete("/:albumId/music", deleteMusic);
+albumRouter.get("/:albumId/musics", getAlbumMusics);
 albumRouter.get("/:albumId", getAlbum);

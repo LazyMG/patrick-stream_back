@@ -59,6 +59,7 @@ export const getAllArtists = async (req: Request, res: Response) => {
     .send({ ok: true, message: "Get All Artists Success", allArtists });
 };
 
+// 정보 범위 정하기
 export const getArtist = async (req: Request, res: Response) => {
   const { artistId } = req.params;
 
@@ -72,4 +73,54 @@ export const getArtist = async (req: Request, res: Response) => {
   }
 
   res.status(200).send({ ok: true, message: "Get Artist Success", artist });
+};
+
+export const getArtistMusics = async (req: Request, res: Response) => {
+  const { artistId } = req.params;
+
+  let musics = [];
+
+  try {
+    const artist = await Artist.findById(artistId);
+    musics = artist.musics;
+  } catch (error) {
+    console.log(error);
+    res.status(400).send({ ok: false, message: "Get Artist Failed" });
+  }
+  res
+    .status(200)
+    .send({ ok: true, message: "Get Artist Musics Success", musics });
+};
+
+export const getArtistAlbums = async (req: Request, res: Response) => {
+  const { artistId } = req.params;
+
+  let albums = [];
+
+  try {
+    const artist = await Artist.findById(artistId);
+    albums = artist.albums;
+  } catch (error) {
+    console.log(error);
+    res.status(400).send({ ok: false, message: "Get Artist Failed" });
+  }
+  res
+    .status(200)
+    .send({ ok: true, message: "Get Artist Albums Success", albums });
+};
+
+export const addMusic = async (req: Request, res: Response) => {
+  console.log("아티스트에 음악 추가");
+};
+
+export const addAlbum = async (req: Request, res: Response) => {
+  console.log("아티스트에 앨범 추가");
+};
+
+export const deleteMusic = async (req: Request, res: Response) => {
+  console.log("아티스트에서 음악 삭제");
+};
+
+export const deleteAblum = async (req: Request, res: Response) => {
+  console.log("아티스트에서 앨범 삭제");
 };
