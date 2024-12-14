@@ -70,6 +70,7 @@ export const getArtist = async (req: Request, res: Response) => {
   } catch (error) {
     console.log(error);
     res.status(400).send({ ok: false, message: "Get Artist Failed" });
+    return;
   }
 
   res.status(200).send({ ok: true, message: "Get Artist Success", artist });

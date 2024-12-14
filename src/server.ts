@@ -8,11 +8,13 @@ import { albumRouter } from "./router/albumRouter";
 import { artistRouter } from "./router/artistRouter";
 import { commentRouter } from "./router/commentRouter";
 import { authRouter } from "./router/authRouter";
+import cookieParser from "cookie-parser";
 
 const app: Express = express();
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cookieParser());
 
 app.use(
   cors({

@@ -1,15 +1,22 @@
 import express from "express";
+import {
+  getUser,
+  createUserPlaylist,
+  getUserAllPlaylists,
+} from "../controller/userController";
 
 export const userRouter = express.Router();
 
 // 사용자 정보
-userRouter.get("/:userId", () => {});
+userRouter.get("/:userId", getUser);
 
 // 사용자의 재생목록
 userRouter.get("/:userId/playlists", () => {});
 
+userRouter.post("/:userId/playlist", createUserPlaylist);
+
 // 사용자의 전체 재생목록
-userRouter.get("/:userId/allPlaylists", () => {});
+userRouter.get("/:userId/allPlaylists", getUserAllPlaylists);
 
 // 사용자가 좋아요 누른 음악
 userRouter.get("/:userId/likedMusics", () => {});
@@ -34,6 +41,3 @@ userRouter.get("/:userId/comments", () => {});
 
 // 사용자가 좋아요 누른 댓글
 userRouter.get("/:userId/likedComments", () => {});
-
-// 새 사용자 생성
-userRouter.post("/", () => {});
