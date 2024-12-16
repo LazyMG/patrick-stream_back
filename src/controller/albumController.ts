@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { IAlbum, IAlbumInput } from "../types/dataTypes";
 import Album from "../models/PSAlbum";
+import Music from "../models/PSMusic";
 
 export const uploadAlbum = async (
   req: Request<{}, {}, { albumData: IAlbumInput }>,
@@ -71,9 +72,31 @@ export const getAlbum = async (req: Request, res: Response) => {
   } catch (error) {
     console.log(error);
     res.status(400).send({ ok: false, message: "Get Album Failed" });
+    return;
   }
 
   res.status(200).send({ ok: true, message: "Get Album Success", album });
+};
+
+export const getNeedToAddMusicAlbums = async (req: Request, res: Response) => {
+  let albums = null;
+
+  try {
+    albums = await Album.aggregate([
+      {
+        $match: {
+          $expr: {
+            $lt: [{ $size: "$musics" }, "$length"],
+          },
+        },
+      },
+    ]);
+  } catch (error) {
+    res.status(500).send({ ok: false, message: "DB Error" });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Get Albums Success", albums });
 };
 
 export const getAlbumMusics = async (req: Request, res: Response) => {
@@ -87,6 +110,7 @@ export const getAlbumMusics = async (req: Request, res: Response) => {
   } catch (error) {
     console.log(error);
     res.status(400).send({ ok: false, message: "Get Album Musics Failed" });
+    return;
   }
 
   res
@@ -95,7 +119,40 @@ export const getAlbumMusics = async (req: Request, res: Response) => {
 };
 
 export const addMusic = async (req: Request, res: Response) => {
-  console.log("앨범에 음악 추가");
+  const { albumId } = req.params;
+  const { musicId } = req.body;
+
+  let album = null;
+
+  try {
+    album = await Album.findById(albumId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Album" });
+    return;
+  }
+
+  if (!album) {
+    res.status(422).send({ ok: false, message: "No Album" });
+    return;
+  }
+
+  let music = null;
+
+  try {
+    music = await Music.findById(musicId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Music" });
+    return;
+  }
+
+  if (!music) {
+    res.status(422).send({ ok: false, message: "No Music" });
+    return;
+  }
+
+  console.log(album, music);
 };
 
 export const deleteMusic = async (req: Request, res: Response) => {

@@ -25,6 +25,7 @@ interface IMusic extends Document {
     | "Ballad"
     | "Hiphop"
     | "Band"
+    | "KPop"
   >;
   coverImg: string;
   created_at: Date;

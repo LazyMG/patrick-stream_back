@@ -6,6 +6,7 @@ import {
   getAlbumMusics,
   getAlbumsCount,
   getAllAlbums,
+  getNeedToAddMusicAlbums,
   uploadAlbum,
 } from "../controller/albumController";
 
@@ -16,6 +17,7 @@ albumRouter.post("/", uploadAlbum);
 albumRouter.get("/", getAllAlbums);
 
 albumRouter.get("/count", getAlbumsCount);
+albumRouter.get("/filteredAlbums", getNeedToAddMusicAlbums);
 
 albumRouter.post("/:albumId/music", addMusic);
 albumRouter.delete("/:albumId/music", deleteMusic);

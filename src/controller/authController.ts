@@ -110,8 +110,8 @@ export const login = async (req: Request, res: Response) => {
   res.status(200).send({
     ok: true,
     message: "Login Success",
-    isLoggedIn: true,
     userId: user._id,
+    username: user.username,
   });
 };
 

@@ -99,9 +99,8 @@ export const getUserAllPlaylists = async (req: Request, res: Response) => {
     duration: playlist.duration,
     introduction: playlist.introduction,
     followersCount: playlist.followers.length, // followers 배열의 길이
+    username: user.username,
   }));
-
-  console.log(playlists);
 
   res
     .status(200)
