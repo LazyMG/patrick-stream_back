@@ -92,3 +92,26 @@ export const getMusic = async (req: Request, res: Response) => {
 
   res.status(200).send({ ok: true, message: "Get Music Success", music });
 };
+
+export const getNewMusics = async (req: Request, res: Response) => {
+  let musics = null;
+
+  try {
+    musics = await Music.find({})
+      .populate({
+        path: "artists",
+        select: "_id artistname coverImg",
+      })
+      .populate({ path: "album", select: "_id title coverImg category" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error" });
+    return;
+  }
+
+  // console.log(musics.slice(20));
+
+  res
+    .status(200)
+    .send({ ok: true, message: "New Musics", musics: musics.slice(0, 20) });
+};

@@ -48,55 +48,66 @@ export const getAlbumsCount = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Get Count Success", counts });
 };
 
-export const getAllAlbums = async (req: Request, res: Response) => {
-  let allAlbums = [];
+export const getAlbums = async (req: Request, res: Response) => {
+  const { filterByMusicsLength } = req.query;
+  let albums = [];
 
   try {
-    allAlbums = await Album.find({});
+    if (filterByMusicsLength === "true") {
+      // 음악 길이가 앨범 길이보다 작은 앨범만 가져오기
+      albums = await Album.aggregate([
+        {
+          $match: {
+            $expr: {
+              $lt: [{ $size: "$musics" }, "$length"],
+            },
+          },
+        },
+      ]);
+    } else {
+      // 모든 앨범 가져오기
+      albums = await Album.find({});
+    }
   } catch (error) {
     console.log(error);
-    res.status(400).send({ ok: false, message: "Get All Albums Failed" });
+    res.status(500).send({ ok: false, message: "Get Albums Failed" });
+    return;
   }
-  res
-    .status(200)
-    .send({ ok: true, message: "Get All Albums Success", allAlbums });
+
+  res.status(200).send({ ok: true, message: "Get Albums Success", albums });
 };
 
+// 어드민 관련은 query 추가하기
 export const getAlbum = async (req: Request, res: Response) => {
   const { albumId } = req.params;
 
   let album = null;
 
+  //client 관점
+  // 아티스트 이름, 아이디, 이미지
+  // 음악 제목, ytId, 재생 횟수
   try {
-    album = await Album.findById(albumId);
+    album = await Album.findById(albumId)
+      .populate({
+        path: "artists",
+        select: "artistname _id coverImg",
+      })
+      .populate({
+        path: "musics",
+        select: "ytId title counts",
+      });
   } catch (error) {
     console.log(error);
-    res.status(400).send({ ok: false, message: "Get Album Failed" });
+    res.status(500).send({ ok: false, message: "Get Album Failed" });
+    return;
+  }
+
+  if (!album) {
+    res.status(422).send({ ok: false, message: "No Album" });
     return;
   }
 
   res.status(200).send({ ok: true, message: "Get Album Success", album });
-};
-
-export const getNeedToAddMusicAlbums = async (req: Request, res: Response) => {
-  let albums = null;
-
-  try {
-    albums = await Album.aggregate([
-      {
-        $match: {
-          $expr: {
-            $lt: [{ $size: "$musics" }, "$length"],
-          },
-        },
-      },
-    ]);
-  } catch (error) {
-    res.status(500).send({ ok: false, message: "DB Error" });
-    return;
-  }
-
-  res.status(200).send({ ok: true, message: "Get Albums Success", albums });
 };
 
 export const getAlbumMusics = async (req: Request, res: Response) => {
@@ -152,7 +163,17 @@ export const addMusic = async (req: Request, res: Response) => {
     return;
   }
 
-  console.log(album, music);
+  try {
+    album.musics.push(music._id);
+    await album.save();
+    music.album = album._id;
+    await music.save();
+  } catch (error) {
+    res.status(500).send({ ok: false, message: "DB Error Connect" });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Music Album Connect Success" });
 };
 
 export const deleteMusic = async (req: Request, res: Response) => {

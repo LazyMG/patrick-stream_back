@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { IArtist, IArtistInput } from "../types/dataTypes";
 import Artist from "../models/PSArtist";
+import Music from "../models/PSMusic";
+import Album from "../models/PSAlbum";
+import { populate } from "dotenv";
 
 export const uploadArtist = async (
   req: Request<{}, {}, { artistData: IArtistInput }>,
@@ -66,7 +69,35 @@ export const getArtist = async (req: Request, res: Response) => {
   let artist = null;
 
   try {
-    artist = await Artist.findById(artistId);
+    artist = await Artist.findById(artistId)
+      .populate({
+        path: "musics",
+        select: "coverImg title ytId counts album duration",
+        populate: [
+          {
+            path: "album",
+            select: "title _id",
+          },
+          {
+            path: "artists",
+            select: "_id artistname",
+          },
+        ],
+      })
+      .populate({
+        path: "albums",
+        select: "coverImg title _id released_at category musics artists",
+        populate: [
+          {
+            path: "musics",
+            select: "ytId title duration",
+          },
+          {
+            path: "artists",
+            select: "_id artistname coverImg",
+          },
+        ],
+      });
   } catch (error) {
     console.log(error);
     res.status(400).send({ ok: false, message: "Get Artist Failed" });
@@ -111,11 +142,99 @@ export const getArtistAlbums = async (req: Request, res: Response) => {
 };
 
 export const addMusic = async (req: Request, res: Response) => {
-  console.log("아티스트에 음악 추가");
+  const { artistId } = req.params;
+  const { musicId } = req.body;
+
+  let artist = null;
+
+  try {
+    artist = await Artist.findById(artistId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Artist" });
+    return;
+  }
+
+  if (!artist) {
+    res.status(422).send({ ok: false, message: "No Artist" });
+    return;
+  }
+
+  let music = null;
+
+  try {
+    music = await Music.findById(musicId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Music" });
+    return;
+  }
+
+  if (!music) {
+    res.status(422).send({ ok: false, message: "No Music" });
+    return;
+  }
+
+  console.log(artist, music);
+
+  try {
+    artist.musics.push(music._id);
+    await artist.save();
+    music.artists.push(artist._id);
+    await music.save();
+  } catch (error) {
+    res.status(500).send({ ok: false, message: "DB Error Connect" });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Music Artist Connect Success" });
 };
 
 export const addAlbum = async (req: Request, res: Response) => {
-  console.log("아티스트에 앨범 추가");
+  const { artistId } = req.params;
+  const { albumId } = req.body;
+
+  let artist = null;
+
+  try {
+    artist = await Artist.findById(artistId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Artist" });
+    return;
+  }
+
+  if (!artist) {
+    res.status(422).send({ ok: false, message: "No Artist" });
+    return;
+  }
+
+  let album = null;
+
+  try {
+    album = await Album.findById(albumId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Album" });
+    return;
+  }
+
+  if (!album) {
+    res.status(422).send({ ok: false, message: "No Album" });
+    return;
+  }
+
+  try {
+    artist.albums.push(album._id);
+    await artist.save();
+    album.artists.push(artist._id);
+    await album.save();
+  } catch (error) {
+    res.status(500).send({ ok: false, message: "DB Error Connect" });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Music Album Connect Success" });
 };
 
 export const deleteMusic = async (req: Request, res: Response) => {

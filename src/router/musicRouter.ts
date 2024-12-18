@@ -3,6 +3,7 @@ import {
   getAllMusics,
   getMusic,
   getMusicsCount,
+  getNewMusics,
   uploadMusic,
 } from "../controller/musicController";
 
@@ -15,7 +16,7 @@ musicRouter.get("/popular", () => {});
 musicRouter.get("/trending", () => {});
 
 // 최근 업데이트된 음악
-musicRouter.get("/recently-updated", () => {});
+musicRouter.get("/recently-updated", getNewMusics);
 
 // 모든 음악
 musicRouter.get("/", getAllMusics);

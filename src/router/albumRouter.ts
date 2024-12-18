@@ -4,9 +4,8 @@ import {
   deleteMusic,
   getAlbum,
   getAlbumMusics,
+  getAlbums,
   getAlbumsCount,
-  getAllAlbums,
-  getNeedToAddMusicAlbums,
   uploadAlbum,
 } from "../controller/albumController";
 
@@ -14,10 +13,10 @@ export const albumRouter = express.Router();
 
 // 아티스트 등록
 albumRouter.post("/", uploadAlbum);
-albumRouter.get("/", getAllAlbums);
+albumRouter.get("/", getAlbums);
 
 albumRouter.get("/count", getAlbumsCount);
-albumRouter.get("/filteredAlbums", getNeedToAddMusicAlbums);
+// albumRouter.get("/filteredAlbums", getNeedToAddMusicAlbums);
 
 albumRouter.post("/:albumId/music", addMusic);
 albumRouter.delete("/:albumId/music", deleteMusic);
