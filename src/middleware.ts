@@ -8,25 +8,6 @@ export const verifyToken = (
   res: Response,
   next: NextFunction
 ): void => {
-  // const token = req.cookies.token;
-
-  // if (!token) {
-  //   res.status(401).send({ ok: false, message: "Not authenticated" });
-  //   return;
-  // }
-
-  // jwt.verify(token, JWT_SECRET, (err, decoded) => {
-  //   if (err) {
-  //     res.status(401).send({ ok: false, message: "Invalid token" });
-  //     return;
-  //   }
-
-  //   // 토큰이 유효하면 decoded.userId를 통해 사용자 정보를 추출
-  //   req.userId = decoded?.userId;
-  //   console.log("middle", req.userId);
-  //   next();
-  // });
-
   const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
 
   if (!token) {

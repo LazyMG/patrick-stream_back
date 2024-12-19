@@ -1,14 +1,28 @@
 import { Request, Response } from "express";
 import User from "../models/PSUser";
 import Playlist from "../models/PSPlaylist";
+import Music from "../models/PSMusic";
 
+// 다른 사용자 페이지 들어갈 때는 정보 가려서 보내기기
 export const getUser = async (req: Request, res: Response) => {
   const { userId } = req.params;
+  const currentUserId = req.userId;
 
   let user = null;
 
+  if (userId === currentUserId) {
+    // console.log("myPage!");
+  }
+
   try {
-    user = await User.findById(userId);
+    user = await User.findById(userId).populate({
+      path: "recentMusics",
+      select: "coverImg title ytId",
+      populate: {
+        path: "artists",
+        select: "_id artistname coverImg",
+      },
+    });
   } catch (error) {
     console.log(error);
     res.status(500).send({ ok: false, message: "DB Failed" });
@@ -105,4 +119,56 @@ export const getUserAllPlaylists = async (req: Request, res: Response) => {
   res
     .status(200)
     .send({ ok: true, message: "Get Playlists Success", playlists });
+};
+
+export const postUserRecentMusics = async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  const { musicId } = req.body;
+  const currentUserId = req.userId;
+
+  if (userId !== currentUserId) {
+    res.status(200).send({ ok: false, message: "No Login User" });
+    return;
+  }
+
+  let user = null;
+
+  try {
+    user = await User.findById(userId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error User" });
+    return;
+  }
+
+  if (!user) {
+    res.status(422).send({ ok: false, message: "No User" });
+    return;
+  }
+
+  let music = null;
+
+  try {
+    music = await Music.findById(musicId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Music" });
+    return;
+  }
+
+  if (!music) {
+    res.status(422).send({ ok: false, message: "No Music" });
+    return;
+  }
+
+  try {
+    user.recentMusics.push(music);
+    await user.save();
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error User Music" });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Add User RecentMusics" });
 };

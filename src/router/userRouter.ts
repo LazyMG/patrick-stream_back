@@ -3,12 +3,14 @@ import {
   getUser,
   createUserPlaylist,
   getUserAllPlaylists,
+  postUserRecentMusics,
 } from "../controller/userController";
+import { verifyToken } from "../middleware";
 
 export const userRouter = express.Router();
 
 // 사용자 정보
-userRouter.get("/:userId", getUser);
+userRouter.get("/:userId", verifyToken, getUser);
 
 // 사용자의 재생목록
 userRouter.get("/:userId/playlists", () => {});
@@ -26,6 +28,9 @@ userRouter.get("/:userId/likedAllMusics", () => {});
 
 // 사용자의 최근 음악
 userRouter.get("/:userId/recentMusics", () => {});
+
+// 사용자의 최근 음악에 추가
+userRouter.post("/:userId/recentMusics", verifyToken, postUserRecentMusics);
 
 // 사용자의 모든 최근 음악
 userRouter.get("/:userId/recentAllMusics", () => {});
