@@ -134,7 +134,10 @@ export const postUserRecentMusics = async (req: Request, res: Response) => {
   let user = null;
 
   try {
-    user = await User.findById(userId);
+    user = await User.findById(userId).populate({
+      path: "recentMusics",
+      select: "ytId",
+    });
   } catch (error) {
     console.log(error);
     res.status(500).send({ ok: false, message: "DB Error User" });
@@ -162,8 +165,10 @@ export const postUserRecentMusics = async (req: Request, res: Response) => {
   }
 
   try {
-    user.recentMusics.push(music);
-    await user.save();
+    if (!user.recentMusics.some((item) => item.ytId === music.ytId)) {
+      user.recentMusics.push(music);
+      await user.save();
+    }
   } catch (error) {
     console.log(error);
     res.status(500).send({ ok: false, message: "DB Error User Music" });
