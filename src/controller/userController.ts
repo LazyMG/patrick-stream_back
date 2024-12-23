@@ -33,7 +33,7 @@ export const getUser = async (req: Request, res: Response) => {
     res.status(422).send({ ok: false, message: "No User" });
     return;
   }
-
+  console.log("get!");
   res.status(200).send({ ok: true, message: "Get User Success", user });
 };
 

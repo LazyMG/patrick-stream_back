@@ -115,3 +115,33 @@ export const getNewMusics = async (req: Request, res: Response) => {
     .status(200)
     .send({ ok: true, message: "New Musics", musics: musics.slice(0, 20) });
 };
+
+export const updateView = async (req: Request, res: Response) => {
+  const { musicId } = req.params;
+
+  let music = null;
+
+  try {
+    music = await Music.findById(musicId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Music" });
+    return;
+  }
+
+  if (!music) {
+    res.status(422).send({ ok: false, message: "No Music" });
+    return;
+  }
+
+  try {
+    music.counts.views += 1;
+    await music.save();
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Music View Update" });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Increase View!" });
+};

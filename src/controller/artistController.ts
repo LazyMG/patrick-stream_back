@@ -72,7 +72,7 @@ export const getArtist = async (req: Request, res: Response) => {
     artist = await Artist.findById(artistId)
       .populate({
         path: "musics",
-        select: "coverImg title ytId counts album duration",
+        select: "coverImg title ytId counts album duration released_at",
         populate: [
           {
             path: "album",

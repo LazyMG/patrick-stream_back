@@ -4,6 +4,7 @@ import {
   getMusic,
   getMusicsCount,
   getNewMusics,
+  updateView,
   uploadMusic,
 } from "../controller/musicController";
 
@@ -28,3 +29,5 @@ musicRouter.get("/count", getMusicsCount);
 musicRouter.post("/", uploadMusic);
 
 musicRouter.get("/:musicId", getMusic);
+
+musicRouter.patch("/:musicId/views", updateView);
