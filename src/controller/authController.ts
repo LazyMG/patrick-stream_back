@@ -5,12 +5,12 @@ import bcrypt from "bcryptjs";
 
 const JWT_SECRET = "maga_jwt_secret_7218";
 
+// 같은 사용자이름 validate 필요, 소셜 로그인 때문에 입력 validate 철저하게
 export const signIn = async (req: Request, res: Response) => {
   const {
     data: { email, username, password, passwordConfirm },
   } = req.body;
 
-  //사용자 찾기, 등록
   if (password !== passwordConfirm) {
     res.status(422).send({ ok: false, message: "Password Error" });
     return;
@@ -61,10 +61,6 @@ export const login = async (req: Request, res: Response) => {
     data: { email, password },
   } = req.body;
 
-  console.log(email, password);
-
-  //사용자 찾기
-
   let user = null;
 
   try {
@@ -111,7 +107,6 @@ export const login = async (req: Request, res: Response) => {
     ok: true,
     message: "Login Success",
     userId: user._id,
-    username: user.username,
   });
 };
 
@@ -136,4 +131,105 @@ export const getSession = (req: Request, res: Response) => {
 
   // 사용자 정보는 DB에서 가져오거나 필요한 데이터를 반환
   res.status(200).send({ ok: true, userId });
+};
+
+// 같은 사용자 이름 validate 필요
+export const googleLogin = async (req: Request, res: Response) => {
+  const { accessToken } = req.body;
+
+  let info;
+
+  try {
+    info = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    }).then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json();
+    });
+  } catch (error) {
+    console.error("Error fetching user info:", error);
+    res.status(422).send({ message: "Login Error", ok: false });
+    return;
+  }
+  let user = null;
+
+  if (info) {
+    const username = info.id + "/g";
+    const email = info.email + "/google";
+
+    user = await User.findOne({ email });
+
+    if (user) {
+      console.log("로그인");
+
+      // 로그인
+      const token = jwt.sign({ userId: user._id }, JWT_SECRET, {
+        expiresIn: "1h",
+      });
+
+      // secure 수정 필요
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: false,
+        maxAge: 3600000, // 1시간
+        // maxAge: 10000,
+      });
+
+      res.status(200).send({
+        ok: true,
+        message: "Social Login Success",
+        userId: user._id,
+      });
+      return;
+    } else {
+      console.log("새로 생성");
+      // 새로 생성
+      let password = info.id;
+
+      try {
+        password = await bcrypt.hash(info.id, 10);
+      } catch (error) {
+        console.log(error);
+        res.status(404).send({ ok: false, message: "Password Hash Error" });
+        return;
+      }
+
+      try {
+        user = await User.create({
+          email,
+          username,
+          password,
+        });
+      } catch (error) {
+        console.log(error);
+        res.status(500).send({ ok: false, message: "DB Error" });
+        return;
+      }
+
+      const token = jwt.sign({ userId: user._id }, JWT_SECRET, {
+        expiresIn: "1h",
+      });
+
+      // secure 수정 필요
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: false,
+        maxAge: 3600000, // 1시간
+        // maxAge: 10000,
+      });
+
+      res.status(200).send({
+        ok: true,
+        message: "Social SignIn & Login Success",
+        userId: user._id,
+      });
+      return;
+    }
+  }
 };

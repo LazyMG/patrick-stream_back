@@ -1,6 +1,7 @@
 import express from "express";
 import {
   getSession,
+  googleLogin,
   login,
   logOut,
   signIn,
@@ -11,6 +12,7 @@ export const authRouter = express.Router();
 
 authRouter.post("/login", login);
 authRouter.post("/signIn", signIn);
+authRouter.post("/google-login", googleLogin);
 
 authRouter.post("/logout", logOut);
 
