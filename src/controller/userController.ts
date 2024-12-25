@@ -15,14 +15,35 @@ export const getUser = async (req: Request, res: Response) => {
   }
 
   try {
-    user = await User.findById(userId).populate({
-      path: "recentMusics",
-      select: "coverImg title ytId",
-      populate: {
-        path: "artists",
-        select: "_id artistname coverImg",
-      },
-    });
+    user = await User.findById(userId)
+      .populate({
+        path: "recentMusics",
+        select: "coverImg title ytId released_at",
+        populate: [
+          {
+            path: "artists",
+            select: "_id artistname coverImg",
+          },
+          {
+            path: "album",
+            select: "_id title coverImg",
+          },
+        ],
+      })
+      .populate({
+        path: "likedMusics",
+        select: "coverImg title ytId released_at",
+        populate: [
+          {
+            path: "artists",
+            select: "_id artistname coverImg",
+          },
+          {
+            path: "album",
+            select: "_id title coverImg",
+          },
+        ],
+      });
   } catch (error) {
     console.log(error);
     res.status(500).send({ ok: false, message: "DB Failed" });
@@ -176,4 +197,60 @@ export const postUserRecentMusics = async (req: Request, res: Response) => {
   }
 
   res.status(200).send({ ok: true, message: "Add User RecentMusics" });
+};
+
+export const updateLikedMusics = async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  const { addMusic, musicId } = req.body;
+
+  let user = null;
+
+  try {
+    user = await User.findById(userId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error User" });
+    return;
+  }
+
+  if (!user) {
+    res.status(422).send({ ok: false, message: "No User" });
+    return;
+  }
+
+  let music = null;
+
+  try {
+    music = await Music.findById(musicId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Music" });
+    return;
+  }
+
+  if (!music) {
+    res.status(422).send({ ok: false, message: "No Music" });
+    return;
+  }
+
+  try {
+    if (addMusic) {
+      const isAlreadyLiked = user.likedMusics.some(
+        (likedMusic) => likedMusic._id.toString() === musicId.toString()
+      );
+      if (!isAlreadyLiked) {
+        user.likedMusics.push(music);
+      }
+    } else {
+      user.likedMusics = user.likedMusics.filter(
+        (likedMusic) => likedMusic._id.toString() !== musicId.toString()
+      );
+    }
+    await user.save();
+  } catch (error) {
+    res.status(500).send({ ok: false, message: "DB Error User with Music" });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Update Likes" });
 };

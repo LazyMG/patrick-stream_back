@@ -4,6 +4,7 @@ import {
   createUserPlaylist,
   getUserAllPlaylists,
   postUserRecentMusics,
+  updateLikedMusics,
 } from "../controller/userController";
 import { verifyToken } from "../middleware";
 
@@ -22,6 +23,8 @@ userRouter.get("/:userId/allPlaylists", getUserAllPlaylists);
 
 // 사용자가 좋아요 누른 음악
 userRouter.get("/:userId/likedMusics", () => {});
+
+userRouter.patch("/:userId/likedMusics", updateLikedMusics);
 
 // 사용자가 좋아요 누른 모든 음악
 userRouter.get("/:userId/likedAllMusics", () => {});
