@@ -54,7 +54,7 @@ export const getUser = async (req: Request, res: Response) => {
     res.status(422).send({ ok: false, message: "No User" });
     return;
   }
-  console.log("get!");
+
   res.status(200).send({ ok: true, message: "Get User Success", user });
 };
 
@@ -142,7 +142,7 @@ export const getUserAllPlaylists = async (req: Request, res: Response) => {
     .send({ ok: true, message: "Get Playlists Success", playlists });
 };
 
-export const postUserRecentMusics = async (req: Request, res: Response) => {
+export const updateUserRecentMusics = async (req: Request, res: Response) => {
   const { userId } = req.params;
   const { musicId } = req.body;
   const currentUserId = req.userId;
@@ -157,7 +157,7 @@ export const postUserRecentMusics = async (req: Request, res: Response) => {
   try {
     user = await User.findById(userId).populate({
       path: "recentMusics",
-      select: "ytId",
+      select: "_id ytId",
     });
   } catch (error) {
     console.log(error);
@@ -186,10 +186,15 @@ export const postUserRecentMusics = async (req: Request, res: Response) => {
   }
 
   try {
-    if (!user.recentMusics.some((item) => item.ytId === music.ytId)) {
-      user.recentMusics.push(music);
-      await user.save();
+    if (user.recentMusics.some((item) => item._id.equals(music._id))) {
+      const newList = user.recentMusics.filter(
+        (item) => !item._id.equals(music._id)
+      );
+      user.recentMusics = [music._id, ...newList];
+    } else {
+      user.recentMusics.push(music._id);
     }
+    await user.save();
   } catch (error) {
     console.log(error);
     res.status(500).send({ ok: false, message: "DB Error User Music" });
@@ -235,22 +240,98 @@ export const updateLikedMusics = async (req: Request, res: Response) => {
 
   try {
     if (addMusic) {
-      const isAlreadyLiked = user.likedMusics.some(
-        (likedMusic) => likedMusic._id.toString() === musicId.toString()
+      const isAlreadyLiked = user.likedMusics.some((likedMusic) =>
+        likedMusic._id.equals(musicId)
       );
       if (!isAlreadyLiked) {
-        user.likedMusics.push(music);
+        user.likedMusics.push(music._id);
+        music.counts.likes += 1;
       }
     } else {
       user.likedMusics = user.likedMusics.filter(
-        (likedMusic) => likedMusic._id.toString() !== musicId.toString()
+        (likedMusic) => !likedMusic._id.equals(musicId)
       );
+      if (music.counts.likes > 0) {
+        music.counts.likes = Math.max(music.counts.likes - 1, 0);
+      }
     }
-    await user.save();
+    await Promise.all([user.save(), music.save()]);
   } catch (error) {
     res.status(500).send({ ok: false, message: "DB Error User with Music" });
     return;
   }
 
   res.status(200).send({ ok: true, message: "Update Likes" });
+};
+
+export const updateUserFollowList = async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  const { activeUserId, addList } = req.body;
+
+  let targetUser = null;
+
+  try {
+    targetUser = await User.findById(userId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Target User" });
+    return;
+  }
+
+  if (!targetUser) {
+    res.status(422).send({ ok: false, message: "No Target User" });
+    return;
+  }
+
+  let activeUser = null;
+
+  try {
+    activeUser = await User.findById(activeUserId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Active User" });
+    return;
+  }
+
+  if (!activeUser) {
+    res.status(422).send({ ok: false, message: "No Target Active User" });
+    return;
+  }
+
+  try {
+    if (addList) {
+      if (!targetUser.followers.some((user) => user._id.equals(activeUserId))) {
+        targetUser.followers.push(activeUserId);
+      }
+      if (
+        !activeUser.followings.followingUsers.some((user) =>
+          user._id.equals(userId)
+        )
+      ) {
+        activeUser.followings.followingUsers.push(userId);
+      }
+    } else {
+      if (targetUser.followers.some((user) => user._id.equals(activeUserId))) {
+        targetUser.followers = targetUser.followers.filter(
+          (user) => !user._id.equals(activeUserId)
+        );
+      }
+      if (
+        activeUser.followings.followingUsers.some((user) =>
+          user._id.equals(userId)
+        )
+      ) {
+        activeUser.followings.followingUsers = activeUser.followings.followingUsers.filter(
+          (user) => !user._id.equals(targetUser)
+        );
+      }
+    }
+    await Promise.all([targetUser.save(), activeUser.save()]);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Update Users" });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Update List" });
 };

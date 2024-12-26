@@ -3,8 +3,9 @@ import {
   getUser,
   createUserPlaylist,
   getUserAllPlaylists,
-  postUserRecentMusics,
   updateLikedMusics,
+  updateUserRecentMusics,
+  updateUserFollowList,
 } from "../controller/userController";
 import { verifyToken } from "../middleware";
 
@@ -33,13 +34,15 @@ userRouter.get("/:userId/likedAllMusics", () => {});
 userRouter.get("/:userId/recentMusics", () => {});
 
 // 사용자의 최근 음악에 추가
-userRouter.post("/:userId/recentMusics", verifyToken, postUserRecentMusics);
+userRouter.patch("/:userId/recentMusics", verifyToken, updateUserRecentMusics);
 
 // 사용자의 모든 최근 음악
 userRouter.get("/:userId/recentAllMusics", () => {});
 
 // 사용자의 팔로워 목록
 userRouter.get("/:userId/followers", () => {});
+
+userRouter.patch("/:userId/followers", updateUserFollowList);
 
 // 사용자가 팔로우한 목록
 userRouter.get("/:userId/followings", () => {});
