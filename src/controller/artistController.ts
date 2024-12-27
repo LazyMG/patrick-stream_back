@@ -4,6 +4,7 @@ import Artist from "../models/PSArtist";
 import Music from "../models/PSMusic";
 import Album from "../models/PSAlbum";
 import { populate } from "dotenv";
+import User from "../models/PSUser";
 
 export const uploadArtist = async (
   req: Request<{}, {}, { artistData: IArtistInput }>,
@@ -243,4 +244,80 @@ export const deleteMusic = async (req: Request, res: Response) => {
 
 export const deleteAblum = async (req: Request, res: Response) => {
   console.log("아티스트에서 앨범 삭제");
+};
+
+export const updateArtistFollowers = async (req: Request, res: Response) => {
+  const { artistId } = req.params;
+  const { activeUserId, addList } = req.body;
+
+  let artist = null;
+
+  try {
+    artist = await Artist.findById(artistId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Aritst" });
+    return;
+  }
+
+  if (!artist) {
+    res.status(422).send({ ok: false, message: "No Artist" });
+    return;
+  }
+
+  let activeUser = null;
+
+  try {
+    activeUser = await User.findById(activeUserId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error User" });
+    return;
+  }
+
+  if (!activeUser) {
+    res.status(422).send({ ok: false, message: "No User" });
+    return;
+  }
+
+  try {
+    if (addList) {
+      //artist
+      if (!artist.followers.some((user) => user._id.equals(activeUserId))) {
+        artist.followers.push(activeUserId);
+      }
+      //user
+      if (
+        !activeUser.followings.followingArtists.some((user) =>
+          user._id.equals(artistId)
+        )
+      ) {
+        activeUser.followings.followingArtists.push(artistId);
+      }
+    } else {
+      //artist
+      if (artist.followers.some((user) => user._id.equals(activeUserId))) {
+        artist.followers = artist.followers.filter(
+          (user) => !user._id.equals(activeUserId)
+        );
+      }
+      //user
+      if (
+        activeUser.followings.followingArtists.some((user) =>
+          user._id.equals(artistId)
+        )
+      ) {
+        activeUser.followings.followingArtists = activeUser.followings.followingArtists.filter(
+          (user) => !user._id.equals(artistId)
+        );
+      }
+    }
+    await Promise.all([artist.save(), activeUser.save()]);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Artist with User" });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Update Artist Followers" });
 };

@@ -18,7 +18,7 @@ export const getUser = async (req: Request, res: Response) => {
     user = await User.findById(userId)
       .populate({
         path: "recentMusics",
-        select: "coverImg title ytId released_at",
+        select: "coverImg title ytId released_at counts duration",
         populate: [
           {
             path: "artists",
@@ -32,7 +32,7 @@ export const getUser = async (req: Request, res: Response) => {
       })
       .populate({
         path: "likedMusics",
-        select: "coverImg title ytId released_at",
+        select: "coverImg title ytId released_at counts duration",
         populate: [
           {
             path: "artists",
@@ -114,8 +114,12 @@ export const getUserAllPlaylists = async (req: Request, res: Response) => {
 
   try {
     user = await User.findById(userId).populate({
-      path: "playlists", // playlists 배열을 populate
-      select: "_id title duration introduction followers", // 필요한 필드만 선택
+      path: "playlists",
+      select: "_id title duration introduction followers",
+      populate: {
+        path: "user",
+        select: "_id username",
+      },
     });
   } catch (error) {
     console.log(error);
@@ -128,18 +132,11 @@ export const getUserAllPlaylists = async (req: Request, res: Response) => {
     return;
   }
 
-  const playlists = user.playlists.map((playlist) => ({
-    id: playlist._id,
-    title: playlist.title,
-    duration: playlist.duration,
-    introduction: playlist.introduction,
-    followersCount: playlist.followers.length, // followers 배열의 길이
-    username: user.username,
-  }));
-
-  res
-    .status(200)
-    .send({ ok: true, message: "Get Playlists Success", playlists });
+  res.status(200).send({
+    ok: true,
+    message: "Get Playlists Success",
+    playlists: user.playlists,
+  });
 };
 
 export const updateUserRecentMusics = async (req: Request, res: Response) => {
@@ -264,7 +261,7 @@ export const updateLikedMusics = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Update Likes" });
 };
 
-export const updateUserFollowList = async (req: Request, res: Response) => {
+export const updateUserFollowers = async (req: Request, res: Response) => {
   const { userId } = req.params;
   const { activeUserId, addList } = req.body;
 
@@ -322,7 +319,7 @@ export const updateUserFollowList = async (req: Request, res: Response) => {
         )
       ) {
         activeUser.followings.followingUsers = activeUser.followings.followingUsers.filter(
-          (user) => !user._id.equals(targetUser)
+          (user) => !user._id.equals(userId)
         );
       }
     }

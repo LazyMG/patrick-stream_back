@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { IAlbum, IAlbumInput } from "../types/dataTypes";
 import Album from "../models/PSAlbum";
 import Music from "../models/PSMusic";
+import User from "../models/PSUser";
 
 export const uploadAlbum = async (
   req: Request<{}, {}, { albumData: IAlbumInput }>,
@@ -94,7 +95,17 @@ export const getAlbum = async (req: Request, res: Response) => {
       })
       .populate({
         path: "musics",
-        select: "ytId title counts",
+        select: "ytId title counts duration coverImg released_at",
+        populate: [
+          {
+            path: "artists",
+            select: "_id artistname",
+          },
+          {
+            path: "album",
+            select: "_id title",
+          },
+        ],
       });
   } catch (error) {
     console.log(error);
@@ -178,4 +189,80 @@ export const addMusic = async (req: Request, res: Response) => {
 
 export const deleteMusic = async (req: Request, res: Response) => {
   console.log("앨범에서 음악 삭제");
+};
+
+export const updateAlbumFollowers = async (req: Request, res: Response) => {
+  const { albumId } = req.params;
+  const { activeUserId, addList } = req.body;
+
+  let album = null;
+
+  try {
+    album = await Album.findById(albumId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Album" });
+    return;
+  }
+
+  if (!album) {
+    res.status(422).send({ ok: false, message: "No Album" });
+    return;
+  }
+
+  let activeUser = null;
+
+  try {
+    activeUser = await User.findById(activeUserId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error User" });
+    return;
+  }
+
+  if (!activeUser) {
+    res.status(422).send({ ok: false, message: "No User" });
+    return;
+  }
+
+  try {
+    if (addList) {
+      //album
+      if (!album.followers.some((user) => user._id.equals(activeUserId))) {
+        album.followers.push(activeUserId);
+      }
+      //user
+      if (
+        !activeUser.followings.followingAlbums.some((user) =>
+          user._id.equals(albumId)
+        )
+      ) {
+        activeUser.followings.followingAlbums.push(albumId);
+      }
+    } else {
+      //album
+      if (album.followers.some((user) => user._id.equals(activeUserId))) {
+        album.followers = album.followers.filter(
+          (user) => !user._id.equals(activeUserId)
+        );
+      }
+      //user
+      if (
+        activeUser.followings.followingAlbums.some((user) =>
+          user._id.equals(albumId)
+        )
+      ) {
+        activeUser.followings.followingAlbums = activeUser.followings.followingAlbums.filter(
+          (user) => !user._id.equals(albumId)
+        );
+      }
+    }
+    await Promise.all([album.save(), activeUser.save()]);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Album with User" });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Update Album Followers" });
 };

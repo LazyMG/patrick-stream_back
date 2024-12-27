@@ -5,7 +5,7 @@ import {
   getUserAllPlaylists,
   updateLikedMusics,
   updateUserRecentMusics,
-  updateUserFollowList,
+  updateUserFollowers,
 } from "../controller/userController";
 import { verifyToken } from "../middleware";
 
@@ -42,7 +42,7 @@ userRouter.get("/:userId/recentAllMusics", () => {});
 // 사용자의 팔로워 목록
 userRouter.get("/:userId/followers", () => {});
 
-userRouter.patch("/:userId/followers", updateUserFollowList);
+userRouter.patch("/:userId/followers", updateUserFollowers);
 
 // 사용자가 팔로우한 목록
 userRouter.get("/:userId/followings", () => {});

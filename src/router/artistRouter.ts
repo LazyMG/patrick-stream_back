@@ -9,6 +9,7 @@ import {
   getArtistAlbums,
   getArtistMusics,
   getArtistsCount,
+  updateArtistFollowers,
   uploadArtist,
 } from "../controller/artistController";
 
@@ -27,3 +28,4 @@ artistRouter.post("/:artistId/album", addAlbum);
 artistRouter.delete("/:artistId/music", deleteMusic);
 artistRouter.delete("/:artistId/album", deleteAblum);
 artistRouter.get("/:artistId", getArtist);
+artistRouter.patch("/:artistId/followers", updateArtistFollowers);

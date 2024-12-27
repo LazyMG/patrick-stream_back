@@ -6,6 +6,7 @@ import {
   getAlbumMusics,
   getAlbums,
   getAlbumsCount,
+  updateAlbumFollowers,
   uploadAlbum,
 } from "../controller/albumController";
 
@@ -22,3 +23,4 @@ albumRouter.post("/:albumId/music", addMusic);
 albumRouter.delete("/:albumId/music", deleteMusic);
 albumRouter.get("/:albumId/musics", getAlbumMusics);
 albumRouter.get("/:albumId", getAlbum);
+albumRouter.patch("/:albumId/followers", updateAlbumFollowers);
