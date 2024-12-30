@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import User from "../models/PSUser";
 import Playlist from "../models/PSPlaylist";
 import Music from "../models/PSMusic";
+import { populate } from "dotenv";
 
 // 다른 사용자 페이지 들어갈 때는 정보 가려서 보내기기
 export const getUser = async (req: Request, res: Response) => {
@@ -43,6 +44,14 @@ export const getUser = async (req: Request, res: Response) => {
             select: "_id title coverImg",
           },
         ],
+      })
+      .populate({
+        path: "followings.followingArtists",
+        select: "_id artistname coverImg followers",
+      })
+      .populate({
+        path: "followings.followingAlbums",
+        select: "_id title coverImg followers released_at category",
       });
   } catch (error) {
     console.log(error);
@@ -116,10 +125,26 @@ export const getUserAllPlaylists = async (req: Request, res: Response) => {
     user = await User.findById(userId).populate({
       path: "playlists",
       select: "_id title duration introduction followers",
-      populate: {
-        path: "user",
-        select: "_id username",
-      },
+      populate: [
+        {
+          path: "user",
+          select: "_id username",
+        },
+        {
+          path: "musics",
+          select: "_id ytId coverImg counts title duration released_at",
+          populate: [
+            {
+              path: "artists",
+              select: "_id artistname coverImg",
+            },
+            {
+              path: "album",
+              select: "_id title released_at coverImg",
+            },
+          ],
+        },
+      ],
     });
   } catch (error) {
     console.log(error);

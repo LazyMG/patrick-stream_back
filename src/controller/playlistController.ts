@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import Playlist from "../models/PSPlaylist";
 import User from "../models/PSUser";
+import Music from "../models/PSMusic";
 
 export const getPlaylist = async (req: Request, res: Response) => {
   const { playlistId } = req.params;
@@ -104,4 +105,65 @@ export const updatePlaylistFollowers = async (req: Request, res: Response) => {
   }
 
   res.status(200).send({ ok: true, message: "Update Playlist Followers" });
+};
+
+export const updatePlaylistMusics = async (req: Request, res: Response) => {
+  const { playlistId } = req.params;
+  const { musicId, addMusic } = req.body;
+  const currentUserId = req.userId;
+
+  let playlist = null;
+
+  try {
+    playlist = await Playlist.findById(playlistId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Playlist" });
+    return;
+  }
+
+  if (!playlist) {
+    res.status(422).send({ ok: false, message: "No Playlist" });
+    return;
+  }
+
+  if (!playlist.user.equals(currentUserId)) {
+    res
+      .status(422)
+      .send({ ok: false, message: "This is not a User's Playlist" });
+    return;
+  }
+
+  let music = null;
+
+  try {
+    music = await Music.findById(musicId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Music" });
+    return;
+  }
+
+  if (!music) {
+    res.status(422).send({ ok: false, message: "No Music" });
+    return;
+  }
+
+  try {
+    if (addMusic) {
+      if (!playlist.musics.some((item) => item._id.equals(musicId))) {
+        playlist.musics.push(musicId);
+      }
+    }
+
+    await playlist.save();
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Playlist with Music" });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Add Music Playlist" });
 };
