@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  deletePlaylist,
   getPlaylist,
   updatePlaylistFollowers,
   updatePlaylistMusics,
@@ -10,4 +11,5 @@ export const playlistRouter = express.Router();
 
 playlistRouter.get("/:playlistId", getPlaylist);
 playlistRouter.patch("/:playlistId/followers", updatePlaylistFollowers);
-playlistRouter.patch("/:playlistId/musics", verifyToken, updatePlaylistMusics);
+playlistRouter.patch("/:playlistId", verifyToken, updatePlaylistMusics);
+playlistRouter.delete("/:playlistId", verifyToken, deletePlaylist);

@@ -134,36 +134,110 @@ export const updatePlaylistMusics = async (req: Request, res: Response) => {
     return;
   }
 
-  let music = null;
-
-  try {
-    music = await Music.findById(musicId);
-  } catch (error) {
-    console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Music" });
-    return;
-  }
-
-  if (!music) {
-    res.status(422).send({ ok: false, message: "No Music" });
-    return;
-  }
-
   try {
     if (addMusic) {
-      if (!playlist.musics.some((item) => item._id.equals(musicId))) {
+      const isExist = playlist.musics.some(
+        (music) => music.toString() === musicId.toString()
+      );
+      if (!isExist) {
         playlist.musics.push(musicId);
+      }
+    } else {
+      if (Array.isArray(musicId)) {
+        playlist.musics = playlist.musics.filter(
+          (music) => !musicId.includes(music.toString())
+        );
+      } else {
+        playlist.musics = playlist.musics.filter(
+          (music) => music.toString() !== musicId.toString()
+        );
       }
     }
 
     await playlist.save();
   } catch (error) {
     console.log(error);
-    res
-      .status(500)
-      .send({ ok: false, message: "DB Error Playlist with Music" });
+    res.status(500).send({ ok: false, message: "DB Error Playlist Musics" });
     return;
   }
 
-  res.status(200).send({ ok: true, message: "Add Music Playlist" });
+  res.status(200).send({ ok: true, message: "Update Playlist Musics" });
+};
+
+export const deletePlaylist = async (req: Request, res: Response) => {
+  const { playlistId } = req.params;
+  const currentUserId = req.userId;
+
+  let playlist = null;
+
+  try {
+    playlist = await Playlist.findById(playlistId).populate({
+      path: "followers",
+      select: "_id",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Failed Playlist" });
+    return;
+  }
+
+  if (!playlist) {
+    res.status(422).send({ ok: false, message: "No Playlist" });
+    return;
+  }
+
+  if (!playlist.user.equals(currentUserId)) {
+    res.status(422).send({ ok: false, message: "Access Denied" });
+    return;
+  }
+
+  try {
+    const owner = await User.findById(currentUserId);
+    if (!owner) {
+      res.status(422).send({ ok: false, message: "No Owner Found" });
+      return;
+    }
+
+    owner.playlists = owner.playlists.filter(
+      (item) => !item.equals(playlist._id)
+    );
+    await owner.save();
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Removing from Owner" });
+    return;
+  }
+
+  try {
+    const followerIds = playlist.followers.map((follower) => follower._id);
+
+    if (followerIds.length > 0) {
+      const followers = await User.find({ _id: { $in: followerIds } });
+
+      for (const follower of followers) {
+        follower.followings.followingPlaylists = follower.followings.followingPlaylists.filter(
+          (item) => item.toString() !== playlist._id.toString()
+        );
+      }
+
+      await Promise.all(followers.map((follower) => follower.save()));
+    }
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Removing from Followers" });
+    return;
+  }
+
+  try {
+    await playlist.deleteOne();
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Deleting Playlist" });
+    return;
+  }
+  res.status(200).send({ ok: true, message: "Delete Playlist" });
 };

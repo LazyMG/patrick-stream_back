@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  emailValidate,
   getSession,
   googleLogin,
   login,
@@ -17,3 +18,4 @@ authRouter.post("/google-login", googleLogin);
 authRouter.post("/logout", logOut);
 
 authRouter.get("/session", verifyToken, getSession);
+authRouter.post("/email", emailValidate);

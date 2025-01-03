@@ -5,6 +5,21 @@ import bcrypt from "bcryptjs";
 
 const JWT_SECRET = "maga_jwt_secret_7218";
 
+export const emailValidate = async (req: Request, res: Response) => {
+  const { value } = req.body;
+  try {
+    const isUserExists = await User.exists({ email: value });
+    res
+      .status(200)
+      .send({ ok: true, message: "Validate Email", flag: !!isUserExists });
+    return;
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error User" });
+    return;
+  }
+};
+
 // 같은 사용자이름 validate 필요, 소셜 로그인 때문에 입력 validate 철저하게
 export const signIn = async (req: Request, res: Response) => {
   const {
@@ -12,7 +27,12 @@ export const signIn = async (req: Request, res: Response) => {
   } = req.body;
 
   if (password !== passwordConfirm) {
-    res.status(422).send({ ok: false, message: "Password Error" });
+    res.status(200).send({
+      ok: false,
+      message: "비밀번호를 확인해주세요.",
+      error: false,
+      type: "password",
+    });
     return;
   }
 
@@ -22,12 +42,17 @@ export const signIn = async (req: Request, res: Response) => {
     user = await User.exists({ email });
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error" });
+    res.status(500).send({ ok: false, message: "DB Error", error: true });
     return;
   }
 
   if (user) {
-    res.status(200).send({ ok: false, message: "Email Already Exist" });
+    res.status(200).send({
+      ok: false,
+      message: "이미 사용 중인 이메일입니다.",
+      error: false,
+      type: "email",
+    });
     return;
   }
 
@@ -37,7 +62,9 @@ export const signIn = async (req: Request, res: Response) => {
     encryptedPassword = await bcrypt.hash(password, 10);
   } catch (error) {
     console.log(error);
-    res.status(404).send({ ok: false, message: "Password Hash Error" });
+    res
+      .status(404)
+      .send({ ok: false, message: "Password Hash Error", error: true });
     return;
   }
 
@@ -49,7 +76,7 @@ export const signIn = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error" });
+    res.status(500).send({ ok: false, message: "DB Error", erorr: true });
     return;
   }
 
@@ -67,7 +94,7 @@ export const login = async (req: Request, res: Response) => {
     user = await User.findOne({ email }, { password: 1 });
 
     if (!user) {
-      res.status(422).send({ ok: false, message: "No User" });
+      res.status(200).send({ ok: false, message: "No User", error: false });
       return;
     }
 
@@ -77,17 +104,19 @@ export const login = async (req: Request, res: Response) => {
       isPasswordRight = await bcrypt.compare(password, user.password);
     } catch (error) {
       console.log(error);
-      res.status(500).send({ ok: false, message: "DB Error" });
+      res.status(500).send({ ok: false, message: "DB Error", error: true });
       return;
     }
 
     if (!isPasswordRight) {
-      res.status(422).send({ ok: false, message: "Password Error" });
+      res
+        .status(200)
+        .send({ ok: false, message: "Password Error", error: false });
       return;
     }
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error" });
+    res.status(500).send({ ok: false, message: "DB Error", error: true });
     return;
   }
 

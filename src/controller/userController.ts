@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import User from "../models/PSUser";
 import Playlist from "../models/PSPlaylist";
 import Music from "../models/PSMusic";
-import { populate } from "dotenv";
 
 // 다른 사용자 페이지 들어갈 때는 정보 가려서 보내기기
 export const getUser = async (req: Request, res: Response) => {
@@ -73,18 +72,23 @@ export const createUserPlaylist = async (req: Request, res: Response) => {
     data: { info, title },
   } = req.body;
 
+  if (!title) {
+    res.status(200).send({ ok: false, message: "No Title", error: false });
+    return;
+  }
+
   let user = null;
 
   try {
     user = await User.findById(userId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error User" });
+    res.status(500).send({ ok: false, message: "DB Error User", error: true });
     return;
   }
 
   if (!user) {
-    res.status(422).send({ ok: false, message: "No User" });
+    res.status(422).send({ ok: false, message: "No User", error: true });
     return;
   }
 
@@ -98,16 +102,20 @@ export const createUserPlaylist = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Playlist" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Playlist", error: true });
     return;
   }
 
   try {
-    user.playlists.push(playlist._id);
+    user.playlists = [playlist._id, ...user.playlists];
     await user.save();
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error User add Playlist" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error User add Playlist", error: true });
     return;
   }
 
