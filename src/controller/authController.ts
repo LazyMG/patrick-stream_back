@@ -262,3 +262,36 @@ export const googleLogin = async (req: Request, res: Response) => {
     }
   }
 };
+
+export const getAdmin = async (req: Request, res: Response) => {
+  if (req.userId === null) {
+    // 로그인하지 않은 사용자에 대한 응답
+    res.status(200).send({
+      ok: true,
+      message: "로그인하지 않은 사용자",
+      userId: null,
+    });
+    return;
+  }
+
+  const userId = req.userId;
+
+  let user = null;
+
+  try {
+    user = await User.findById(userId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error" });
+    return;
+  }
+
+  if (!user) {
+    res.status(422).send({ ok: false, message: "No User" });
+    return;
+  }
+
+  res
+    .status(200)
+    .send({ ok: true, message: "User's Admin", isAdmin: user.isAdmin });
+};

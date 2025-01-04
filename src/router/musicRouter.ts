@@ -4,9 +4,11 @@ import {
   getMusic,
   getMusicsCount,
   getNewMusics,
+  updateMusic,
   updateView,
   uploadMusic,
 } from "../controller/musicController";
+import { verifyToken } from "../middleware";
 
 export const musicRouter = express.Router();
 
@@ -26,8 +28,9 @@ musicRouter.get("/", getAllMusics);
 musicRouter.get("/count", getMusicsCount);
 
 // 음악 등록
-musicRouter.post("/", uploadMusic);
+musicRouter.post("/", verifyToken, uploadMusic);
 
 musicRouter.get("/:musicId", getMusic);
+musicRouter.patch("/:musicId", verifyToken, updateMusic);
 
 musicRouter.patch("/:musicId/views", updateView);

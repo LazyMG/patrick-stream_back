@@ -19,6 +19,12 @@ export const uploadMusic = async (
   res: Response
 ): Promise<void> => {
   const { musicData } = req.body;
+  const userId = req.userId;
+
+  if (!userId) {
+    res.status(422).send({ ok: false, message: "Access Denied" });
+    return;
+  }
 
   const genreArray = musicData.genre.split(",");
 
@@ -31,9 +37,24 @@ export const uploadMusic = async (
     ytId: musicData.ytId,
   };
 
-  try {
-    console.log(musicData);
+  let isMusicExist = null;
 
+  try {
+    isMusicExist = await Music.exists({ ytId: newData.ytId });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Music", error: true });
+    return;
+  }
+
+  if (isMusicExist) {
+    res
+      .status(200)
+      .send({ ok: false, message: "Already Exists Music", error: false });
+    return;
+  }
+
+  try {
     await Music.create({
       title: newData.title,
       ytId: newData.ytId,
@@ -44,7 +65,8 @@ export const uploadMusic = async (
     });
   } catch (error) {
     console.log(error);
-    res.status(400).send({ ok: false, message: "Upload Failed" });
+    res.status(500).send({ ok: false, message: "Upload Failed", error: true });
+    return;
   }
 
   res.status(200).send({ ok: true, message: "Upload Success" });
@@ -144,4 +166,35 @@ export const updateView = async (req: Request, res: Response) => {
   }
 
   res.status(200).send({ ok: true, message: "Increase View!" });
+};
+
+export const updateMusic = async (req: Request, res: Response) => {
+  const { musicId } = req.params;
+  const { changedFields } = req.body;
+  const userId = req.userId;
+
+  if (!userId) {
+    res.status(422).send({ ok: false, message: "Access Denied" });
+    return;
+  }
+
+  try {
+    const updatedMusic = await Music.findByIdAndUpdate(
+      musicId,
+      { $set: changedFields }, // 변경된 필드만 덮어씀
+      { new: true, runValidators: true }
+      // new: true → 업데이트된 document를 반환
+      // runValidators: true → 스키마 유효성 검사 반영
+    );
+
+    if (!updatedMusic) {
+      res.status(404).send({ ok: false, message: "No Music" });
+      return;
+    }
+    res.status(200).send({ ok: true, message: "Music Updated" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Music" });
+    return;
+  }
 };

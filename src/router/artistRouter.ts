@@ -9,14 +9,16 @@ import {
   getArtistAlbums,
   getArtistMusics,
   getArtistsCount,
+  updateArtist,
   updateArtistFollowers,
   uploadArtist,
 } from "../controller/artistController";
+import { verifyToken } from "../middleware";
 
 export const artistRouter = express.Router();
 
 // 아티스트 등록
-artistRouter.post("/", uploadArtist);
+artistRouter.post("/", verifyToken, uploadArtist);
 artistRouter.get("/", getAllArtists);
 
 artistRouter.get("/count", getArtistsCount);
@@ -28,4 +30,5 @@ artistRouter.post("/:artistId/album", addAlbum);
 artistRouter.delete("/:artistId/music", deleteMusic);
 artistRouter.delete("/:artistId/album", deleteAblum);
 artistRouter.get("/:artistId", getArtist);
+artistRouter.patch("/:artistId", verifyToken, updateArtist);
 artistRouter.patch("/:artistId/followers", updateArtistFollowers);

@@ -9,6 +9,12 @@ export const uploadAlbum = async (
   res: Response
 ) => {
   const { albumData } = req.body;
+  const userId = req.userId;
+
+  if (!userId) {
+    res.status(422).send({ ok: false, message: "Access Denied" });
+    return;
+  }
 
   const newData: IAlbum = {
     title: albumData.title,
@@ -31,6 +37,7 @@ export const uploadAlbum = async (
   } catch (error) {
     console.log(error);
     res.status(400).send({ ok: false, message: "Upload Failed" });
+    return;
   }
 
   res.status(200).send({ ok: true, message: "Upload Success" });
@@ -265,4 +272,35 @@ export const updateAlbumFollowers = async (req: Request, res: Response) => {
   }
 
   res.status(200).send({ ok: true, message: "Update Album Followers" });
+};
+
+export const updateAlbum = async (req: Request, res: Response) => {
+  const { albumId } = req.params;
+  const { changedFields } = req.body;
+  const userId = req.userId;
+
+  if (!userId) {
+    res.status(422).send({ ok: false, message: "Access Denied" });
+    return;
+  }
+
+  try {
+    const updatedAlbum = await Album.findByIdAndUpdate(
+      albumId,
+      { $set: changedFields }, // 변경된 필드만 덮어씀
+      { new: true, runValidators: true }
+      // new: true → 업데이트된 document를 반환
+      // runValidators: true → 스키마 유효성 검사 반영
+    );
+
+    if (!updatedAlbum) {
+      res.status(404).send({ ok: false, message: "No Album" });
+      return;
+    }
+    res.status(200).send({ ok: true, message: "Album Updated" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Album" });
+    return;
+  }
 };

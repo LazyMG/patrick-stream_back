@@ -11,6 +11,12 @@ export const uploadArtist = async (
   res: Response
 ) => {
   const { artistData } = req.body;
+  const userId = req.userId;
+
+  if (!userId) {
+    res.status(422).send({ ok: false, message: "Access Denied" });
+    return;
+  }
 
   const newData: IArtist = {
     artistname: artistData.artistname,
@@ -320,4 +326,35 @@ export const updateArtistFollowers = async (req: Request, res: Response) => {
   }
 
   res.status(200).send({ ok: true, message: "Update Artist Followers" });
+};
+
+export const updateArtist = async (req: Request, res: Response) => {
+  const { artistId } = req.params;
+  const { changedFields } = req.body;
+  const userId = req.userId;
+
+  if (!userId) {
+    res.status(422).send({ ok: false, message: "Access Denied" });
+    return;
+  }
+
+  try {
+    const updatedArtist = await Artist.findByIdAndUpdate(
+      artistId,
+      { $set: changedFields }, // 변경된 필드만 덮어씀
+      { new: true, runValidators: true }
+      // new: true → 업데이트된 document를 반환
+      // runValidators: true → 스키마 유효성 검사 반영
+    );
+
+    if (!updatedArtist) {
+      res.status(404).send({ ok: false, message: "No Artist" });
+      return;
+    }
+    res.status(200).send({ ok: true, message: "Artist Updated" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Artist" });
+    return;
+  }
 };
