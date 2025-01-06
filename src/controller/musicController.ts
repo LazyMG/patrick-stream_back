@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import { IMusic, IMusicInput } from "../types/dataTypes";
 import Music from "../models/PSMusic";
+import Album from "../models/PSAlbum";
+import Artist from "../models/PSArtist";
+import Playlist from "../models/PSPlaylist";
+import User from "../models/PSUser";
 
 //1. 수동 validate
 //released_at:0000-00-00 형식
@@ -48,6 +52,7 @@ export const uploadMusic = async (
   }
 
   if (isMusicExist) {
+    console.log(isMusicExist);
     res
       .status(200)
       .send({ ok: false, message: "Already Exists Music", error: false });
@@ -118,8 +123,12 @@ export const getMusic = async (req: Request, res: Response) => {
 export const getNewMusics = async (req: Request, res: Response) => {
   let musics = null;
 
+  // artist, album 등록된 음악만 가져오기
   try {
-    musics = await Music.find({})
+    musics = await Music.find({
+      artists: { $exists: true, $ne: [] },
+      album: { $exists: true, $ne: null },
+    })
       .populate({
         path: "artists",
         select: "_id artistname coverImg",
@@ -131,11 +140,11 @@ export const getNewMusics = async (req: Request, res: Response) => {
     return;
   }
 
-  // console.log(musics.slice(20));
-
-  res
-    .status(200)
-    .send({ ok: true, message: "New Musics", musics: musics.slice(0, 20) });
+  res.status(200).send({
+    ok: true,
+    message: "New Musics",
+    musics: musics.length >= 20 ? musics.reverse().slice(0, 20) : musics,
+  });
 };
 
 export const updateView = async (req: Request, res: Response) => {
@@ -197,4 +206,95 @@ export const updateMusic = async (req: Request, res: Response) => {
     res.status(500).send({ ok: false, message: "DB Error Music" });
     return;
   }
+};
+
+export const deleteMusic = async (req: Request, res: Response) => {
+  const { musicId } = req.params;
+  const userId = req.userId;
+
+  if (!userId) {
+    res.status(404).send({ ok: false, message: "Access Denied" });
+    return;
+  }
+
+  let music = null;
+
+  try {
+    music = await Music.findById(musicId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Erorr Get Music" });
+    return;
+  }
+
+  if (!music) {
+    res.status(422).send({ ok: false, message: "No Music" });
+    return;
+  }
+
+  // case 2. album includes This Music
+  try {
+    await Album.updateMany(
+      { musics: music._id },
+      { $pull: { musics: music._id } }
+    );
+  } catch (error) {
+    console.log("Error removing music from albums:", error);
+    res.status(500).send({ ok: false, message: "DB Error Albums Pull" });
+    return;
+  }
+
+  // case 3. artist includes This Music
+  try {
+    await Artist.updateMany(
+      { musics: music._id },
+      { $pull: { musics: music._id } }
+    );
+  } catch (error) {
+    console.log("Error removing music from artists:", error);
+    res.status(500).send({ ok: false, message: "DB Error Artists Pull" });
+    return;
+  }
+
+  // case 4. user 'like' This Music
+  try {
+    await User.updateMany(
+      {
+        $or: [{ likedMusics: music._id }, { recentMusics: music._id }],
+      },
+      {
+        $pull: {
+          likedMusics: music._id,
+          recentMusics: music._id,
+        },
+      }
+    );
+  } catch (error) {
+    console.log("Error removing music from users' musics:", error);
+    res.status(500).send({ ok: false, message: "DB Error Users Pull" });
+    return;
+  }
+
+  // case 5. playlist includes This Music
+  try {
+    await Playlist.updateMany(
+      { musics: music._id },
+      { $pull: { musics: music._id } }
+    );
+  } catch (error) {
+    console.log("Error removing music from playlists:", error);
+    res.status(500).send({ ok: false, message: "DB Error Playlists Pull" });
+    return;
+  }
+
+  // case 1. just delete Music -> last work
+  try {
+    await music.deleteOne();
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Delete Music" });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Delete Music" });
 };

@@ -19,6 +19,12 @@ export const getUser = async (req: Request, res: Response) => {
       .populate({
         path: "recentMusics",
         select: "coverImg title ytId released_at counts duration",
+        match: {
+          $or: [
+            { artists: { $exists: true, $ne: [] } },
+            { album: { $exists: true, $ne: null } },
+          ],
+        },
         populate: [
           {
             path: "artists",
@@ -33,6 +39,12 @@ export const getUser = async (req: Request, res: Response) => {
       .populate({
         path: "likedMusics",
         select: "coverImg title ytId released_at counts duration",
+        match: {
+          $or: [
+            { artists: { $exists: true, $ne: [] } },
+            { album: { $exists: true, $ne: null } },
+          ],
+        },
         populate: [
           {
             path: "artists",
@@ -51,6 +63,9 @@ export const getUser = async (req: Request, res: Response) => {
       .populate({
         path: "followings.followingAlbums",
         select: "_id title coverImg followers released_at category",
+        match: {
+          artists: { $exists: true, $ne: [] },
+        },
       });
   } catch (error) {
     console.log(error);

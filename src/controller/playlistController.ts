@@ -13,6 +13,12 @@ export const getPlaylist = async (req: Request, res: Response) => {
       .populate({
         path: "musics",
         select: "_id title artists album duration counts ytId coverImg",
+        match: {
+          $or: [
+            { artists: { $exists: true, $ne: [] } },
+            { album: { $exists: true, $ne: null } },
+          ],
+        },
       })
       .populate({
         path: "user",

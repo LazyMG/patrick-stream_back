@@ -3,6 +3,7 @@ import { IAlbum, IAlbumInput } from "../types/dataTypes";
 import Album from "../models/PSAlbum";
 import Music from "../models/PSMusic";
 import User from "../models/PSUser";
+import Artist from "../models/PSArtist";
 
 export const uploadAlbum = async (
   req: Request<{}, {}, { albumData: IAlbumInput }>,
@@ -56,6 +57,7 @@ export const getAlbumsCount = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Get Count Success", counts });
 };
 
+// admin
 export const getAlbums = async (req: Request, res: Response) => {
   const { filterByMusicsLength } = req.query;
   let albums = [];
@@ -85,6 +87,7 @@ export const getAlbums = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Get Albums Success", albums });
 };
 
+// client
 // 어드민 관련은 query 추가하기
 export const getAlbum = async (req: Request, res: Response) => {
   const { albumId } = req.params;
@@ -103,6 +106,12 @@ export const getAlbum = async (req: Request, res: Response) => {
       .populate({
         path: "musics",
         select: "ytId title counts duration coverImg released_at",
+        match: {
+          $or: [
+            { artists: { $exists: true, $ne: [] } },
+            { album: { $exists: true, $ne: null } },
+          ],
+        },
         populate: [
           {
             path: "artists",
@@ -128,6 +137,7 @@ export const getAlbum = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Get Album Success", album });
 };
 
+// admin
 export const getAlbumMusics = async (req: Request, res: Response) => {
   const { albumId } = req.params;
 
@@ -303,4 +313,84 @@ export const updateAlbum = async (req: Request, res: Response) => {
     res.status(500).send({ ok: false, message: "DB Error Album" });
     return;
   }
+};
+
+export const deleteAlbum = async (req: Request, res: Response) => {
+  const { albumId } = req.params;
+  const userId = req.userId;
+
+  if (!userId) {
+    res.status(404).send({ ok: false, message: "Access Denied" });
+    return;
+  }
+
+  let album = null;
+
+  try {
+    album = await Album.findById(albumId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Erorr Get Album" });
+    return;
+  }
+
+  if (!album) {
+    res.status(422).send({ ok: false, message: "No Album" });
+    return;
+  }
+
+  // case 2. delete Album and contain musics
+  try {
+    await Music.updateMany({ album: album._id }, { $set: { album: null } });
+  } catch (error) {
+    console.log("Error removing album from musics:", error);
+    res.status(500).send({ ok: false, message: "DB Error Musics Pull" });
+    return;
+  }
+
+  // case 3. delete Album included Artist
+  try {
+    await Artist.updateMany(
+      { albums: album._id },
+      { $pull: { albums: album._id } }
+    );
+  } catch (error) {
+    console.log("Error removing album from artists:", error);
+    res.status(500).send({ ok: false, message: "DB Error Artists Pull" });
+    return;
+  }
+
+  // case 4. delete Album included User's following list
+  try {
+    const followerIds = album.followers.map((follower) => follower._id);
+
+    if (followerIds.length > 0) {
+      const followers = await User.find({ _id: { $in: followerIds } });
+
+      for (const follower of followers) {
+        follower.followings.followingAlbums = follower.followings.followingAlbums.filter(
+          (item) => item.toString() !== album._id.toString()
+        );
+      }
+
+      await Promise.all(followers.map((follower) => follower.save()));
+    }
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Removing from Followers" });
+    return;
+  }
+
+  // case 1. delete Album -> last work
+  try {
+    await album.deleteOne();
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Delete Album" });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Delete Album" });
 };

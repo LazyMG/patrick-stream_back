@@ -1,6 +1,7 @@
 import express from "express";
 import {
   addMusic,
+  deleteAlbum,
   deleteMusic,
   getAlbum,
   getAlbumMusics,
@@ -19,11 +20,14 @@ albumRouter.post("/", verifyToken, uploadAlbum);
 albumRouter.get("/", getAlbums);
 
 albumRouter.get("/count", getAlbumsCount);
-// albumRouter.get("/filteredAlbums", getNeedToAddMusicAlbums);
 
 albumRouter.post("/:albumId/music", addMusic);
 albumRouter.delete("/:albumId/music", deleteMusic);
+
 albumRouter.get("/:albumId/musics", getAlbumMusics);
+
 albumRouter.get("/:albumId", getAlbum);
 albumRouter.patch("/:albumId", verifyToken, updateAlbum);
+albumRouter.delete("/:albumId", verifyToken, deleteAlbum);
+
 albumRouter.patch("/:albumId/followers", updateAlbumFollowers);

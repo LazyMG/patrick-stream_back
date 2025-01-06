@@ -8,7 +8,7 @@ interface Count {
 // 인터페이스 정의 (Document 타입 확장)
 interface IMusic extends Document {
   title: string;
-  artitsts?: Array<Types.ObjectId>;
+  artists?: Array<Types.ObjectId>;
   album?: Types.ObjectId;
   duration: number; // 초 단위
   counts: Count;

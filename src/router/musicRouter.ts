@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  deleteMusic,
   getAllMusics,
   getMusic,
   getMusicsCount,
@@ -32,5 +33,6 @@ musicRouter.post("/", verifyToken, uploadMusic);
 
 musicRouter.get("/:musicId", getMusic);
 musicRouter.patch("/:musicId", verifyToken, updateMusic);
+musicRouter.delete("/:musicId", verifyToken, deleteMusic);
 
 musicRouter.patch("/:musicId/views", updateView);

@@ -3,6 +3,7 @@ import {
   addAlbum,
   addMusic,
   deleteAblum,
+  deleteAritst,
   deleteMusic,
   getAllArtists,
   getArtist,
@@ -29,6 +30,9 @@ artistRouter.post("/:artistId/music", addMusic);
 artistRouter.post("/:artistId/album", addAlbum);
 artistRouter.delete("/:artistId/music", deleteMusic);
 artistRouter.delete("/:artistId/album", deleteAblum);
+
 artistRouter.get("/:artistId", getArtist);
 artistRouter.patch("/:artistId", verifyToken, updateArtist);
+artistRouter.delete("/:artistId", verifyToken, deleteAritst);
+
 artistRouter.patch("/:artistId/followers", updateArtistFollowers);
