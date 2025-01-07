@@ -131,11 +131,15 @@ export const getArtistMusics = async (req: Request, res: Response) => {
   let musics = [];
 
   try {
-    const artist = await Artist.findById(artistId);
+    const artist = await Artist.findById(artistId).populate({
+      path: "musics",
+      select: "_id title ytId released_at",
+    });
     musics = artist.musics;
   } catch (error) {
     console.log(error);
     res.status(400).send({ ok: false, message: "Get Artist Failed" });
+    return;
   }
   res
     .status(200)
@@ -149,11 +153,15 @@ export const getArtistAlbums = async (req: Request, res: Response) => {
   let albums = [];
 
   try {
-    const artist = await Artist.findById(artistId);
+    const artist = await Artist.findById(artistId).populate({
+      path: "albums",
+      select: "_id title category released_at length musics",
+    });
     albums = artist.albums;
   } catch (error) {
     console.log(error);
     res.status(400).send({ ok: false, message: "Get Artist Failed" });
+    return;
   }
   res
     .status(200)
@@ -256,12 +264,118 @@ export const addAlbum = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Music Album Connect Success" });
 };
 
-export const deleteMusic = async (req: Request, res: Response) => {
-  console.log("아티스트에서 음악 삭제");
+export const deleteArtistMusic = async (req: Request, res: Response) => {
+  const { artistId } = req.params;
+  const { musicId } = req.body;
+
+  const userId = req.userId;
+
+  if (!userId) {
+    res.status(404).send({ ok: false, message: "Access Denied" });
+    return;
+  }
+
+  let artist = null;
+
+  try {
+    artist = await Artist.findById(artistId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Artist" });
+    return;
+  }
+
+  if (!artist) {
+    res.status(422).send({ ok: false, message: "No Artist" });
+    return;
+  }
+
+  let music = null;
+
+  try {
+    music = await Music.findById(musicId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Music" });
+    return;
+  }
+
+  if (!music) {
+    res.status(422).send({ ok: false, message: "No Music" });
+    return;
+  }
+
+  try {
+    artist.musics = artist.musics.filter((m) => !m.equals(musicId));
+    await artist.save();
+    music.artists = music.artists.filter((a) => !a.equals(artistId));
+    await music.save();
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Save Music and Artist" });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Delete Music from Artist" });
 };
 
-export const deleteAblum = async (req: Request, res: Response) => {
-  console.log("아티스트에서 앨범 삭제");
+export const deleteArtistAblum = async (req: Request, res: Response) => {
+  const { artistId } = req.params;
+  const { albumId } = req.body;
+
+  const userId = req.userId;
+
+  if (!userId) {
+    res.status(404).send({ ok: false, message: "Access Denied" });
+    return;
+  }
+
+  let artist = null;
+
+  try {
+    artist = await Artist.findById(artistId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Artist" });
+    return;
+  }
+
+  if (!artist) {
+    res.status(422).send({ ok: false, message: "No Artist" });
+    return;
+  }
+
+  let album = null;
+
+  try {
+    album = await Album.findById(albumId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Album" });
+    return;
+  }
+
+  if (!album) {
+    res.status(422).send({ ok: false, message: "No Album" });
+    return;
+  }
+
+  try {
+    artist.albums = artist.albums.filter((a) => !a.equals(albumId));
+    await artist.save();
+    album.artists = album.artists.filter((a) => !a.equals(artistId));
+    await album.save();
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Save Album and Artist" });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Delete Album from Artist" });
 };
 
 export const updateArtistFollowers = async (req: Request, res: Response) => {

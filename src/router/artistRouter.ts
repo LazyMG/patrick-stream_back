@@ -2,9 +2,9 @@ import express from "express";
 import {
   addAlbum,
   addMusic,
-  deleteAblum,
   deleteAritst,
-  deleteMusic,
+  deleteArtistAblum,
+  deleteArtistMusic,
   getAllArtists,
   getArtist,
   getArtistAlbums,
@@ -28,8 +28,8 @@ artistRouter.get("/:artistId/albums", getArtistAlbums);
 
 artistRouter.post("/:artistId/music", addMusic);
 artistRouter.post("/:artistId/album", addAlbum);
-artistRouter.delete("/:artistId/music", deleteMusic);
-artistRouter.delete("/:artistId/album", deleteAblum);
+artistRouter.delete("/:artistId/music", verifyToken, deleteArtistMusic);
+artistRouter.delete("/:artistId/album", verifyToken, deleteArtistAblum);
 
 artistRouter.get("/:artistId", getArtist);
 artistRouter.patch("/:artistId", verifyToken, updateArtist);

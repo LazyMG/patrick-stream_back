@@ -144,7 +144,10 @@ export const getAlbumMusics = async (req: Request, res: Response) => {
   let musics = [];
 
   try {
-    const album = await Album.findById(albumId);
+    const album = await Album.findById(albumId).populate({
+      path: "musics",
+      select: "_id title released_at ytId",
+    });
     musics = album.musics;
   } catch (error) {
     console.log(error);
@@ -157,6 +160,7 @@ export const getAlbumMusics = async (req: Request, res: Response) => {
     .send({ ok: true, message: "Get Album Musics Success", musics });
 };
 
+// admin
 export const addMusic = async (req: Request, res: Response) => {
   const { albumId } = req.params;
   const { musicId } = req.body;
@@ -204,8 +208,73 @@ export const addMusic = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Music Album Connect Success" });
 };
 
-export const deleteMusic = async (req: Request, res: Response) => {
-  console.log("앨범에서 음악 삭제");
+// admin
+export const deleteAlbumMusic = async (req: Request, res: Response) => {
+  const { albumId } = req.params;
+  const { musicId } = req.body;
+
+  const userId = req.userId;
+
+  if (!userId) {
+    res.status(404).send({ ok: false, message: "Access Denied" });
+    return;
+  }
+
+  let album = null;
+
+  try {
+    album = await Album.findById(albumId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Album" });
+    return;
+  }
+
+  if (!album) {
+    res.status(422).send({ ok: false, message: "No Album" });
+    return;
+  }
+
+  let music = null;
+
+  try {
+    music = await Music.findById(musicId);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Music" });
+    return;
+  }
+
+  if (!music) {
+    res.status(422).send({ ok: false, message: "No Music" });
+    return;
+  }
+
+  if (!music.album || music.album.toString() !== album._id.toString()) {
+    res.status(422).send({
+      ok: false,
+      message: "This Music is not in the given Album",
+    });
+    return;
+  }
+
+  try {
+    album.musics = album.musics.filter(
+      (m) => m.toString() !== music._id.toString()
+    );
+    await album.save();
+
+    music.album = null;
+    await music.save();
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Save Music and Album" });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Delete Music from Album" });
 };
 
 export const updateAlbumFollowers = async (req: Request, res: Response) => {

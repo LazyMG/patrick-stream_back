@@ -2,7 +2,7 @@ import express from "express";
 import {
   addMusic,
   deleteAlbum,
-  deleteMusic,
+  deleteAlbumMusic,
   getAlbum,
   getAlbumMusics,
   getAlbums,
@@ -22,7 +22,7 @@ albumRouter.get("/", getAlbums);
 albumRouter.get("/count", getAlbumsCount);
 
 albumRouter.post("/:albumId/music", addMusic);
-albumRouter.delete("/:albumId/music", deleteMusic);
+albumRouter.delete("/:albumId/music", verifyToken, deleteAlbumMusic);
 
 albumRouter.get("/:albumId/musics", getAlbumMusics);
 
