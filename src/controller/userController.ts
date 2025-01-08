@@ -2,13 +2,24 @@ import { Request, Response } from "express";
 import User from "../models/PSUser";
 import Playlist from "../models/PSPlaylist";
 import Music from "../models/PSMusic";
+import mongoose from "mongoose";
 
-// 다른 사용자 페이지 들어갈 때는 정보 가려서 보내기기
+// 다른 사용자 페이지 들어갈 때는 정보 가려서 보내기
 export const getUser = async (req: Request, res: Response) => {
   const { userId } = req.params;
   const currentUserId = req.userId;
 
   let user = null;
+
+  // 처리 완료
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid user ID format",
+      error: false,
+    });
+    return;
+  }
 
   if (userId === currentUserId) {
     // console.log("myPage!");
@@ -68,13 +79,15 @@ export const getUser = async (req: Request, res: Response) => {
         },
       });
   } catch (error) {
+    // 처리 필요
     console.log(error);
     res.status(500).send({ ok: false, message: "DB Failed" });
     return;
   }
 
+  // 처리 완료
   if (!user) {
-    res.status(422).send({ ok: false, message: "No User" });
+    res.status(422).send({ ok: false, message: "No User", error: false });
     return;
   }
 
@@ -87,6 +100,13 @@ export const createUserPlaylist = async (req: Request, res: Response) => {
     data: { info, title },
   } = req.body;
 
+  // 처리 필요
+  if (!userId) {
+    res.status(200).send({ ok: false, message: "Access Denied", error: false });
+    return;
+  }
+
+  // 처리 필요
   if (!title) {
     res.status(200).send({ ok: false, message: "No Title", error: false });
     return;
@@ -97,13 +117,15 @@ export const createUserPlaylist = async (req: Request, res: Response) => {
   try {
     user = await User.findById(userId);
   } catch (error) {
+    // 처리 필요
     console.log(error);
     res.status(500).send({ ok: false, message: "DB Error User", error: true });
     return;
   }
 
+  // 처리 필요
   if (!user) {
-    res.status(422).send({ ok: false, message: "No User", error: true });
+    res.status(422).send({ ok: false, message: "No User", error: false });
     return;
   }
 
@@ -116,6 +138,7 @@ export const createUserPlaylist = async (req: Request, res: Response) => {
       user: user._id,
     });
   } catch (error) {
+    // 처리 필요
     console.log(error);
     res
       .status(500)
@@ -127,6 +150,7 @@ export const createUserPlaylist = async (req: Request, res: Response) => {
     user.playlists = [playlist._id, ...user.playlists];
     await user.save();
   } catch (error) {
+    // 처리 필요
     console.log(error);
     res
       .status(500)
@@ -141,6 +165,16 @@ export const createUserPlaylist = async (req: Request, res: Response) => {
 
 export const getUserAllPlaylists = async (req: Request, res: Response) => {
   const { userId } = req.params;
+
+  // 처리 필요
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid user ID format",
+      error: false,
+    });
+    return;
+  }
 
   let user = null;
 
@@ -170,13 +204,15 @@ export const getUserAllPlaylists = async (req: Request, res: Response) => {
       ],
     });
   } catch (error) {
+    // 처리 필요
     console.log(error);
     res.status(500).send({ ok: false, message: "DB Error User" });
     return;
   }
 
+  // 처리 필요
   if (!user) {
-    res.status(422).send({ ok: false, message: "No User" });
+    res.status(422).send({ ok: false, message: "No User", error: false });
     return;
   }
 
@@ -192,8 +228,28 @@ export const updateUserRecentMusics = async (req: Request, res: Response) => {
   const { musicId } = req.body;
   const currentUserId = req.userId;
 
+  // 처리 필요
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid user ID format",
+      error: false,
+    });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(musicId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid music ID format",
+      error: false,
+    });
+    return;
+  }
+
+  // 처리 필요
   if (userId !== currentUserId) {
-    res.status(200).send({ ok: false, message: "No Login User" });
+    res.status(200).send({ ok: false, message: "No Login User", error: false });
     return;
   }
 
@@ -205,13 +261,15 @@ export const updateUserRecentMusics = async (req: Request, res: Response) => {
       select: "_id ytId",
     });
   } catch (error) {
+    // 처리 필요
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error User" });
+    res.status(500).send({ ok: false, message: "DB Error User", error: true });
     return;
   }
 
+  // 처리 필요
   if (!user) {
-    res.status(422).send({ ok: false, message: "No User" });
+    res.status(422).send({ ok: false, message: "No User", error: false });
     return;
   }
 
@@ -220,13 +278,15 @@ export const updateUserRecentMusics = async (req: Request, res: Response) => {
   try {
     music = await Music.findById(musicId);
   } catch (error) {
+    // 처리 필요
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Music" });
+    res.status(500).send({ ok: false, message: "DB Error Music", error: true });
     return;
   }
 
+  // 처리 필요
   if (!music) {
-    res.status(422).send({ ok: false, message: "No Music" });
+    res.status(422).send({ ok: false, message: "No Music", error: false });
     return;
   }
 
@@ -241,8 +301,11 @@ export const updateUserRecentMusics = async (req: Request, res: Response) => {
     }
     await user.save();
   } catch (error) {
+    // 처리 필요
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error User Music" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error User Music", error: true });
     return;
   }
 
@@ -253,18 +316,39 @@ export const updateLikedMusics = async (req: Request, res: Response) => {
   const { userId } = req.params;
   const { addMusic, musicId } = req.body;
 
+  // 처리 필요
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid user ID format",
+      error: false,
+    });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(musicId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid music ID format",
+      error: false,
+    });
+    return;
+  }
+
   let user = null;
 
   try {
     user = await User.findById(userId);
   } catch (error) {
+    // 처리 필요
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error User" });
+    res.status(500).send({ ok: false, message: "DB Error User", error: true });
     return;
   }
 
+  // 처리 필요
   if (!user) {
-    res.status(422).send({ ok: false, message: "No User" });
+    res.status(422).send({ ok: false, message: "No User", error: false });
     return;
   }
 
@@ -273,13 +357,15 @@ export const updateLikedMusics = async (req: Request, res: Response) => {
   try {
     music = await Music.findById(musicId);
   } catch (error) {
+    // 처리 필요
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Music" });
+    res.status(500).send({ ok: false, message: "DB Error Music", error: true });
     return;
   }
 
+  // 처리 필요
   if (!music) {
-    res.status(422).send({ ok: false, message: "No Music" });
+    res.status(422).send({ ok: false, message: "No Music", error: false });
     return;
   }
 
@@ -289,7 +375,7 @@ export const updateLikedMusics = async (req: Request, res: Response) => {
         likedMusic._id.equals(musicId)
       );
       if (!isAlreadyLiked) {
-        user.likedMusics.push(music._id);
+        user.likedMusics = [music._id, ...user.likedMusics];
         music.counts.likes += 1;
       }
     } else {
@@ -302,7 +388,11 @@ export const updateLikedMusics = async (req: Request, res: Response) => {
     }
     await Promise.all([user.save(), music.save()]);
   } catch (error) {
-    res.status(500).send({ ok: false, message: "DB Error User with Music" });
+    // 처리 필요
+    console.log(error);
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error User with Music", error: true });
     return;
   }
 
@@ -313,18 +403,42 @@ export const updateUserFollowers = async (req: Request, res: Response) => {
   const { userId } = req.params;
   const { activeUserId, addList } = req.body;
 
+  // 처리 필요
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid user ID format",
+      error: false,
+    });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(activeUserId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid user ID format",
+      error: false,
+    });
+    return;
+  }
+
   let targetUser = null;
 
   try {
     targetUser = await User.findById(userId);
   } catch (error) {
+    // 처리 필요
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Target User" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Target User", error: true });
     return;
   }
 
   if (!targetUser) {
-    res.status(422).send({ ok: false, message: "No Target User" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Target User", error: false });
     return;
   }
 
@@ -333,13 +447,18 @@ export const updateUserFollowers = async (req: Request, res: Response) => {
   try {
     activeUser = await User.findById(activeUserId);
   } catch (error) {
+    // 처리 필요
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Active User" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Active User", error: true });
     return;
   }
 
   if (!activeUser) {
-    res.status(422).send({ ok: false, message: "No Target Active User" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Target Active User", error: false });
     return;
   }
 
@@ -373,8 +492,11 @@ export const updateUserFollowers = async (req: Request, res: Response) => {
     }
     await Promise.all([targetUser.save(), activeUser.save()]);
   } catch (error) {
+    // 처리 필요
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Update Users" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Update Users", error: true });
     return;
   }
 

@@ -4,6 +4,7 @@ import Album from "../models/PSAlbum";
 import Music from "../models/PSMusic";
 import User from "../models/PSUser";
 import Artist from "../models/PSArtist";
+import mongoose from "mongoose";
 
 export const uploadAlbum = async (
   req: Request<{}, {}, { albumData: IAlbumInput }>,
@@ -94,6 +95,15 @@ export const getAlbum = async (req: Request, res: Response) => {
 
   let album = null;
 
+  if (!mongoose.Types.ObjectId.isValid(albumId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid user ID format",
+      error: false,
+    });
+    return;
+  }
+
   //client 관점
   // 아티스트 이름, 아이디, 이미지
   // 음악 제목, ytId, 재생 횟수
@@ -130,7 +140,7 @@ export const getAlbum = async (req: Request, res: Response) => {
   }
 
   if (!album) {
-    res.status(422).send({ ok: false, message: "No Album" });
+    res.status(422).send({ ok: false, message: "No Album", error: false });
     return;
   }
 

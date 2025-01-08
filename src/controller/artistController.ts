@@ -5,7 +5,9 @@ import Music from "../models/PSMusic";
 import Album from "../models/PSAlbum";
 import { populate } from "dotenv";
 import User from "../models/PSUser";
+import mongoose from "mongoose";
 
+// admin
 export const uploadArtist = async (
   req: Request<{}, {}, { artistData: IArtistInput }>,
   res: Response
@@ -76,6 +78,15 @@ export const getArtist = async (req: Request, res: Response) => {
 
   let artist = null;
 
+  if (!mongoose.Types.ObjectId.isValid(artistId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid user ID format",
+      error: false,
+    });
+    return;
+  }
+
   try {
     artist = await Artist.findById(artistId)
       .populate({
@@ -117,7 +128,12 @@ export const getArtist = async (req: Request, res: Response) => {
       });
   } catch (error) {
     console.log(error);
-    res.status(400).send({ ok: false, message: "Get Artist Failed" });
+    res.status(500).send({ ok: false, message: "Get Artist Failed" });
+    return;
+  }
+
+  if (!artist) {
+    res.status(422).send({ ok: false, message: "No Artist", error: false });
     return;
   }
 
@@ -424,7 +440,10 @@ export const updateArtistFollowers = async (req: Request, res: Response) => {
           user._id.equals(artistId)
         )
       ) {
-        activeUser.followings.followingArtists.push(artistId);
+        activeUser.followings.followingArtists = [
+          artistId,
+          ...activeUser.followings.followingArtists,
+        ];
       }
     } else {
       //artist

@@ -2,11 +2,21 @@ import { Request, Response } from "express";
 import Playlist from "../models/PSPlaylist";
 import User from "../models/PSUser";
 import Music from "../models/PSMusic";
+import mongoose from "mongoose";
 
 export const getPlaylist = async (req: Request, res: Response) => {
   const { playlistId } = req.params;
 
   let playlist = null;
+
+  if (!mongoose.Types.ObjectId.isValid(playlistId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid user ID format",
+      error: false,
+    });
+    return;
+  }
 
   try {
     playlist = await Playlist.findById(playlistId)
@@ -30,7 +40,7 @@ export const getPlaylist = async (req: Request, res: Response) => {
   }
 
   if (!playlist) {
-    res.status(422).send({ ok: false, message: "No Playlist" });
+    res.status(422).send({ ok: false, message: "No Playlist", error: false });
     return;
   }
   // console.log(playlist);

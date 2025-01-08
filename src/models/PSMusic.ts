@@ -29,6 +29,7 @@ interface IMusic extends Document {
   >;
   coverImg: string;
   created_at: Date;
+  index?: number;
 }
 
 const MusicSchema: Schema = new Schema({
@@ -53,6 +54,7 @@ const MusicSchema: Schema = new Schema({
   coverImg: { type: String, required: true },
   created_at: { type: Date, default: Date.now() },
   genre: [{ type: String, required: true }],
+  index: { type: Number, default: 0 },
 });
 
 const Music = mongoose.model<IMusic>("PSMusic", MusicSchema);
