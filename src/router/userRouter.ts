@@ -13,14 +13,13 @@ export const userRouter = express.Router();
 
 // 사용자 정보
 userRouter.get("/:userId", verifyToken, getUser);
+// 로그인 한 사용자의 재생목록 추가
+userRouter.post("/:userId/playlist", verifyToken, createUserPlaylist);
+// 사용자의 전체 재생목록
+userRouter.get("/:userId/allPlaylists", verifyToken, getUserAllPlaylists);
 
 // 사용자의 재생목록
 userRouter.get("/:userId/playlists", () => {});
-
-userRouter.post("/:userId/playlist", createUserPlaylist);
-
-// 사용자의 전체 재생목록
-userRouter.get("/:userId/allPlaylists", getUserAllPlaylists);
 
 // 사용자가 좋아요 누른 음악
 userRouter.get("/:userId/likedMusics", () => {});

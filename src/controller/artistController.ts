@@ -43,6 +43,7 @@ export const uploadArtist = async (
   res.status(200).send({ ok: true, message: "Upload Success" });
 };
 
+// admin
 export const getArtistsCount = async (req: Request, res: Response) => {
   let counts = 0;
 
@@ -56,6 +57,7 @@ export const getArtistsCount = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Get Count Success", counts });
 };
 
+// admin
 export const getAllArtists = async (req: Request, res: Response) => {
   let allArtists = [];
 
@@ -184,6 +186,7 @@ export const getArtistAlbums = async (req: Request, res: Response) => {
     .send({ ok: true, message: "Get Artist Albums Success", albums });
 };
 
+// admin
 export const addMusic = async (req: Request, res: Response) => {
   const { artistId } = req.params;
   const { musicId } = req.body;
@@ -233,6 +236,7 @@ export const addMusic = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Music Artist Connect Success" });
 };
 
+// admin
 export const addAlbum = async (req: Request, res: Response) => {
   const { artistId } = req.params;
   const { albumId } = req.body;
@@ -280,6 +284,7 @@ export const addAlbum = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Music Album Connect Success" });
 };
 
+// admin
 export const deleteArtistMusic = async (req: Request, res: Response) => {
   const { artistId } = req.params;
   const { musicId } = req.body;
@@ -337,6 +342,7 @@ export const deleteArtistMusic = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Delete Music from Artist" });
 };
 
+// admin
 export const deleteArtistAblum = async (req: Request, res: Response) => {
   const { artistId } = req.params;
   const { albumId } = req.body;
@@ -394,6 +400,7 @@ export const deleteArtistAblum = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Delete Album from Artist" });
 };
 
+// client
 export const updateArtistFollowers = async (req: Request, res: Response) => {
   const { artistId } = req.params;
   const { activeUserId, addList } = req.body;
@@ -473,6 +480,7 @@ export const updateArtistFollowers = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Update Artist Followers" });
 };
 
+// admin
 export const updateArtist = async (req: Request, res: Response) => {
   const { artistId } = req.params;
   const { changedFields } = req.body;
@@ -504,6 +512,7 @@ export const updateArtist = async (req: Request, res: Response) => {
   }
 };
 
+// admin
 export const deleteAritst = async (req: Request, res: Response) => {
   const { artistId } = req.params;
   const userId = req.userId;

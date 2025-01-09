@@ -4,6 +4,7 @@ import User from "../models/PSUser";
 import Music from "../models/PSMusic";
 import mongoose from "mongoose";
 
+// client
 export const getPlaylist = async (req: Request, res: Response) => {
   const { playlistId } = req.params;
 
@@ -29,6 +30,16 @@ export const getPlaylist = async (req: Request, res: Response) => {
             { album: { $exists: true, $ne: null } },
           ],
         },
+        populate: [
+          {
+            path: "artists",
+            select: "_id artistname",
+          },
+          {
+            path: "album",
+            select: "_id title",
+          },
+        ],
       })
       .populate({
         path: "user",
@@ -47,6 +58,7 @@ export const getPlaylist = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Get Playlist Success", playlist });
 };
 
+// client
 export const updatePlaylistFollowers = async (req: Request, res: Response) => {
   const { playlistId } = req.params;
   const { activeUserId, addList } = req.body;
@@ -123,6 +135,7 @@ export const updatePlaylistFollowers = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Update Playlist Followers" });
 };
 
+// client
 export const updatePlaylistMusics = async (req: Request, res: Response) => {
   const { playlistId } = req.params;
   const { musicId, addMusic } = req.body;
@@ -180,6 +193,7 @@ export const updatePlaylistMusics = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Update Playlist Musics" });
 };
 
+// client
 export const deletePlaylist = async (req: Request, res: Response) => {
   const { playlistId } = req.params;
   const currentUserId = req.userId;

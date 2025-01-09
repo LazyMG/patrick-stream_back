@@ -6,6 +6,7 @@ import User from "../models/PSUser";
 import Artist from "../models/PSArtist";
 import mongoose from "mongoose";
 
+// admin
 export const uploadAlbum = async (
   req: Request<{}, {}, { albumData: IAlbumInput }>,
   res: Response
@@ -45,6 +46,7 @@ export const uploadAlbum = async (
   res.status(200).send({ ok: true, message: "Upload Success" });
 };
 
+// admin
 export const getAlbumsCount = async (req: Request, res: Response) => {
   let counts = 0;
 
@@ -287,6 +289,7 @@ export const deleteAlbumMusic = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Delete Music from Album" });
 };
 
+// client
 export const updateAlbumFollowers = async (req: Request, res: Response) => {
   const { albumId } = req.params;
   const { activeUserId, addList } = req.body;
@@ -363,6 +366,7 @@ export const updateAlbumFollowers = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Update Album Followers" });
 };
 
+// admin
 export const updateAlbum = async (req: Request, res: Response) => {
   const { albumId } = req.params;
   const { changedFields } = req.body;
@@ -394,6 +398,7 @@ export const updateAlbum = async (req: Request, res: Response) => {
   }
 };
 
+// admin
 export const deleteAlbum = async (req: Request, res: Response) => {
   const { albumId } = req.params;
   const userId = req.userId;

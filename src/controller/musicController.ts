@@ -17,7 +17,7 @@ import User from "../models/PSUser";
 //released_at:YYMMDD 형식
 //모두 0000-00-00 형식으로 바꾸기
 //duration: 초 단위
-
+// admin
 export const uploadMusic = async (
   req: Request<{}, {}, { musicData: IMusicInput }>,
   res: Response
@@ -77,6 +77,7 @@ export const uploadMusic = async (
   res.status(200).send({ ok: true, message: "Upload Success" });
 };
 
+// admin
 export const getMusicsCount = async (req: Request, res: Response) => {
   let counts = 0;
 
@@ -90,6 +91,7 @@ export const getMusicsCount = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Get Count Success", counts });
 };
 
+// admin
 export const getAllMusics = async (req: Request, res: Response) => {
   let allMusics = [];
 
@@ -105,6 +107,7 @@ export const getAllMusics = async (req: Request, res: Response) => {
     .send({ ok: true, message: "Get All Musics Success", allMusics });
 };
 
+// admin
 export const getMusic = async (req: Request, res: Response) => {
   const { musicId } = req.params;
 
@@ -120,6 +123,7 @@ export const getMusic = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Get Music Success", music });
 };
 
+// client
 export const getNewMusics = async (req: Request, res: Response) => {
   let musics = null;
 
@@ -147,6 +151,7 @@ export const getNewMusics = async (req: Request, res: Response) => {
   });
 };
 
+// client
 export const updateView = async (req: Request, res: Response) => {
   const { musicId } = req.params;
 
@@ -177,6 +182,7 @@ export const updateView = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Increase View!" });
 };
 
+// admin
 export const updateMusic = async (req: Request, res: Response) => {
   const { musicId } = req.params;
   const { changedFields } = req.body;
@@ -208,6 +214,7 @@ export const updateMusic = async (req: Request, res: Response) => {
   }
 };
 
+// admin
 export const deleteMusic = async (req: Request, res: Response) => {
   const { musicId } = req.params;
   const userId = req.userId;

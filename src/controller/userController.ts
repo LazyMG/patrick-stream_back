@@ -4,7 +4,9 @@ import Playlist from "../models/PSPlaylist";
 import Music from "../models/PSMusic";
 import mongoose from "mongoose";
 
+// 에러 처리 완료
 // 다른 사용자 페이지 들어갈 때는 정보 가려서 보내기
+// client
 export const getUser = async (req: Request, res: Response) => {
   const { userId } = req.params;
   const currentUserId = req.userId;
@@ -77,11 +79,15 @@ export const getUser = async (req: Request, res: Response) => {
         match: {
           artists: { $exists: true, $ne: [] },
         },
+      })
+      .populate({
+        path: "followings.followingPlaylists",
+        select: "_id title followers",
       });
   } catch (error) {
-    // 처리 필요
+    // 처리 완료
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Failed" });
+    res.status(500).send({ ok: false, message: "DB Failed", error: true });
     return;
   }
 
@@ -94,21 +100,40 @@ export const getUser = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Get User Success", user });
 };
 
+// 에러 처리 완료
+// client
 export const createUserPlaylist = async (req: Request, res: Response) => {
   const { userId } = req.params;
   const {
     data: { info, title },
   } = req.body;
+  const currentUserId = req.userId;
 
-  // 처리 필요
-  if (!userId) {
-    res.status(200).send({ ok: false, message: "Access Denied", error: false });
+  // 처리 완료
+  if (!currentUserId) {
+    res.status(404).send({
+      ok: false,
+      message: "Access Denied",
+      error: false,
+    });
     return;
   }
 
-  // 처리 필요
+  // 처리 완료
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid user ID format",
+      error: false,
+    });
+    return;
+  }
+
+  // 처리 완료
   if (!title) {
-    res.status(200).send({ ok: false, message: "No Title", error: false });
+    res
+      .status(200)
+      .send({ ok: false, message: "Input No Title", error: false });
     return;
   }
 
@@ -117,13 +142,13 @@ export const createUserPlaylist = async (req: Request, res: Response) => {
   try {
     user = await User.findById(userId);
   } catch (error) {
-    // 처리 필요
+    // 처리 완료
     console.log(error);
     res.status(500).send({ ok: false, message: "DB Error User", error: true });
     return;
   }
 
-  // 처리 필요
+  // 처리 완료
   if (!user) {
     res.status(422).send({ ok: false, message: "No User", error: false });
     return;
@@ -138,7 +163,7 @@ export const createUserPlaylist = async (req: Request, res: Response) => {
       user: user._id,
     });
   } catch (error) {
-    // 처리 필요
+    // 처리 완료
     console.log(error);
     res
       .status(500)
@@ -150,7 +175,7 @@ export const createUserPlaylist = async (req: Request, res: Response) => {
     user.playlists = [playlist._id, ...user.playlists];
     await user.save();
   } catch (error) {
-    // 처리 필요
+    // 처리 완료
     console.log(error);
     res
       .status(500)
@@ -163,10 +188,22 @@ export const createUserPlaylist = async (req: Request, res: Response) => {
     .send({ ok: true, message: "Create Playlist", id: playlist._id });
 };
 
+// 에러 처리 완료
+// client
 export const getUserAllPlaylists = async (req: Request, res: Response) => {
   const { userId } = req.params;
+  const currentUserId = req.userId;
 
-  // 처리 필요
+  if (!currentUserId) {
+    res.status(200).send({
+      ok: true,
+      message: "Get Playlists Success",
+      playlists: [],
+    });
+    return;
+  }
+
+  // 처리 완료
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     res.status(404).send({
       ok: false,
@@ -204,13 +241,13 @@ export const getUserAllPlaylists = async (req: Request, res: Response) => {
       ],
     });
   } catch (error) {
-    // 처리 필요
+    // 처리 완료
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error User" });
+    res.status(500).send({ ok: false, message: "DB Error User", error: true });
     return;
   }
 
-  // 처리 필요
+  // 처리 완료
   if (!user) {
     res.status(422).send({ ok: false, message: "No User", error: false });
     return;
@@ -223,6 +260,7 @@ export const getUserAllPlaylists = async (req: Request, res: Response) => {
   });
 };
 
+// client
 export const updateUserRecentMusics = async (req: Request, res: Response) => {
   const { userId } = req.params;
   const { musicId } = req.body;
@@ -312,6 +350,7 @@ export const updateUserRecentMusics = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Add User RecentMusics" });
 };
 
+// client
 export const updateLikedMusics = async (req: Request, res: Response) => {
   const { userId } = req.params;
   const { addMusic, musicId } = req.body;
@@ -399,6 +438,7 @@ export const updateLikedMusics = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Update Likes" });
 };
 
+// client
 export const updateUserFollowers = async (req: Request, res: Response) => {
   const { userId } = req.params;
   const { activeUserId, addList } = req.body;
