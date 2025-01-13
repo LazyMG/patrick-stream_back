@@ -96,7 +96,15 @@ export const getAllMusics = async (req: Request, res: Response) => {
   let allMusics = [];
 
   try {
-    allMusics = await Music.find({});
+    allMusics = await Music.find({})
+      .populate({
+        path: "artists",
+        select: "artistname",
+      })
+      .populate({
+        path: "album",
+        select: "title",
+      });
   } catch (error) {
     console.log(error);
     res.status(400).send({ ok: false, message: "Get All Musics Failed" });
@@ -114,7 +122,15 @@ export const getMusic = async (req: Request, res: Response) => {
   let music = null;
 
   try {
-    music = await Music.findById(musicId);
+    music = await Music.findById(musicId)
+      .populate({
+        path: "artists",
+        select: "_id artistname",
+      })
+      .populate({
+        path: "album",
+        select: "_id title",
+      });
   } catch (error) {
     console.log(error);
     res.status(400).send({ ok: false, message: "Get Music Failed" });
@@ -133,6 +149,7 @@ export const getNewMusics = async (req: Request, res: Response) => {
       artists: { $exists: true, $ne: [] },
       album: { $exists: true, $ne: null },
     })
+      .sort({ created_at: -1 })
       .populate({
         path: "artists",
         select: "_id artistname coverImg",
@@ -147,7 +164,64 @@ export const getNewMusics = async (req: Request, res: Response) => {
   res.status(200).send({
     ok: true,
     message: "New Musics",
-    musics: musics.length >= 20 ? musics.reverse().slice(0, 20) : musics,
+    musics: musics.length >= 20 ? musics.slice(0, 20) : musics,
+  });
+};
+
+// client
+export const getTrendingMusics = async (req: Request, res: Response) => {
+  let musics = null;
+
+  // artist, album 등록된 음악만 가져오기
+  try {
+    musics = await Music.find({
+      artists: { $exists: true, $ne: [] },
+      album: { $exists: true, $ne: null },
+    })
+      .sort({ "counts.views": -1 })
+      .populate({
+        path: "artists",
+        select: "_id artistname coverImg",
+      })
+      .populate({ path: "album", select: "_id title coverImg category" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error" });
+    return;
+  }
+
+  res.status(200).send({
+    ok: true,
+    message: "Trending Musics",
+    musics: musics.length >= 20 ? musics.slice(0, 20) : musics,
+  });
+};
+
+export const getPopularMusics = async (req: Request, res: Response) => {
+  let musics = null;
+
+  // artist, album 등록된 음악만 가져오기
+  try {
+    musics = await Music.find({
+      artists: { $exists: true, $ne: [] },
+      album: { $exists: true, $ne: null },
+    })
+      .sort({ "counts.likes": -1 })
+      .populate({
+        path: "artists",
+        select: "_id artistname coverImg",
+      })
+      .populate({ path: "album", select: "_id title coverImg category" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error" });
+    return;
+  }
+
+  res.status(200).send({
+    ok: true,
+    message: "Popular Musics",
+    musics: musics.length >= 20 ? musics.slice(0, 20) : musics,
   });
 };
 

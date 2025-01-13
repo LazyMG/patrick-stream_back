@@ -5,6 +5,8 @@ import {
   getMusic,
   getMusicsCount,
   getNewMusics,
+  getPopularMusics,
+  getTrendingMusics,
   updateMusic,
   updateView,
   uploadMusic,
@@ -13,11 +15,11 @@ import { verifyToken } from "../middleware";
 
 export const musicRouter = express.Router();
 
-// 인기 음악
-musicRouter.get("/popular", () => {});
+// 인기 음악(좋아요 수)
+musicRouter.get("/popular", getPopularMusics);
 
 // 트렌드 음악(조회수)
-musicRouter.get("/trending", () => {});
+musicRouter.get("/trending", getTrendingMusics);
 
 // 최근 업데이트된 음악
 musicRouter.get("/recently-updated", getNewMusics);

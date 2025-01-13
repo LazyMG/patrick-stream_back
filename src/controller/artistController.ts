@@ -80,6 +80,7 @@ export const getArtist = async (req: Request, res: Response) => {
 
   let artist = null;
 
+  // 처리 필요
   if (!mongoose.Types.ObjectId.isValid(artistId)) {
     res.status(404).send({
       ok: false,
@@ -129,11 +130,13 @@ export const getArtist = async (req: Request, res: Response) => {
         ],
       });
   } catch (error) {
+    // 처리 필요
     console.log(error);
     res.status(500).send({ ok: false, message: "Get Artist Failed" });
     return;
   }
 
+  // 처리 필요
   if (!artist) {
     res.status(422).send({ ok: false, message: "No Artist", error: false });
     return;

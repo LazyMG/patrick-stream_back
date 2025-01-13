@@ -10,6 +10,7 @@ export const getPlaylist = async (req: Request, res: Response) => {
 
   let playlist = null;
 
+  // 처리 필요
   if (!mongoose.Types.ObjectId.isValid(playlistId)) {
     res.status(404).send({
       ok: false,
@@ -46,10 +47,13 @@ export const getPlaylist = async (req: Request, res: Response) => {
         select: "_id username",
       });
   } catch (error) {
+    // 처리 필요
+    console.log(error);
     res.status(500).send({ ok: false, message: "DB Error" });
     return;
   }
 
+  // 처리 필요
   if (!playlist) {
     res.status(422).send({ ok: false, message: "No Playlist", error: false });
     return;
@@ -206,16 +210,19 @@ export const deletePlaylist = async (req: Request, res: Response) => {
       select: "_id",
     });
   } catch (error) {
+    // 처리 필요
     console.log(error);
     res.status(500).send({ ok: false, message: "DB Failed Playlist" });
     return;
   }
 
+  // 처리 필요
   if (!playlist) {
     res.status(422).send({ ok: false, message: "No Playlist" });
     return;
   }
 
+  // 처리 필요
   if (!playlist.user.equals(currentUserId)) {
     res.status(422).send({ ok: false, message: "Access Denied" });
     return;
@@ -224,6 +231,7 @@ export const deletePlaylist = async (req: Request, res: Response) => {
   try {
     const owner = await User.findById(currentUserId);
     if (!owner) {
+      // 처리 필요
       res.status(422).send({ ok: false, message: "No Owner Found" });
       return;
     }
@@ -233,6 +241,7 @@ export const deletePlaylist = async (req: Request, res: Response) => {
     );
     await owner.save();
   } catch (error) {
+    // 처리 필요
     console.log(error);
     res
       .status(500)
@@ -255,6 +264,7 @@ export const deletePlaylist = async (req: Request, res: Response) => {
       await Promise.all(followers.map((follower) => follower.save()));
     }
   } catch (error) {
+    // 처리 필요
     console.log(error);
     res
       .status(500)
@@ -266,6 +276,7 @@ export const deletePlaylist = async (req: Request, res: Response) => {
     await playlist.deleteOne();
   } catch (error) {
     console.log(error);
+    // 처리 필요
     res.status(500).send({ ok: false, message: "DB Error Deleting Playlist" });
     return;
   }

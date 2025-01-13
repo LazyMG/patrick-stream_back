@@ -79,7 +79,10 @@ export const getAlbums = async (req: Request, res: Response) => {
       ]);
     } else {
       // 모든 앨범 가져오기
-      albums = await Album.find({});
+      albums = await Album.find({}).populate({
+        path: "artists",
+        select: "artistname",
+      });
     }
   } catch (error) {
     console.log(error);
@@ -97,6 +100,7 @@ export const getAlbum = async (req: Request, res: Response) => {
 
   let album = null;
 
+  // 처리 필요
   if (!mongoose.Types.ObjectId.isValid(albumId)) {
     res.status(404).send({
       ok: false,
@@ -124,6 +128,9 @@ export const getAlbum = async (req: Request, res: Response) => {
             { album: { $exists: true, $ne: null } },
           ],
         },
+        options: {
+          sort: { index: 1 },
+        },
         populate: [
           {
             path: "artists",
@@ -136,11 +143,13 @@ export const getAlbum = async (req: Request, res: Response) => {
         ],
       });
   } catch (error) {
+    // 처리 필요
     console.log(error);
     res.status(500).send({ ok: false, message: "Get Album Failed" });
     return;
   }
 
+  // 처리 필요
   if (!album) {
     res.status(422).send({ ok: false, message: "No Album", error: false });
     return;

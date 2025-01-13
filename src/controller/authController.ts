@@ -2,8 +2,26 @@ import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import User from "../models/PSUser";
 import bcrypt from "bcryptjs";
+import { usernameGenerator } from "../lib/usernameGenerator";
 
 const JWT_SECRET = "maga_jwt_secret_7218";
+
+const generateMultipleNicknames = (count: number) => {
+  const nicknames = [];
+  while (nicknames.length < count) {
+    const nickname = usernameGenerator();
+    if (!nicknames.includes(nickname)) {
+      nicknames.push(nickname);
+    }
+  }
+  return nicknames;
+};
+
+const checkMultipleNicknamesExistence = async (nicknames: string[]) => {
+  const existingUsers = await User.find({ username: { $in: nicknames } });
+  const existingNicknames = existingUsers.map((user) => user.username);
+  return existingNicknames;
+};
 
 export const emailValidate = async (req: Request, res: Response) => {
   const { value } = req.body;
@@ -23,7 +41,7 @@ export const emailValidate = async (req: Request, res: Response) => {
 // 같은 사용자이름 validate 필요, 소셜 로그인 때문에 입력 validate 철저하게
 export const signIn = async (req: Request, res: Response) => {
   const {
-    data: { email, username, password, passwordConfirm },
+    data: { email, password, passwordConfirm },
   } = req.body;
 
   if (password !== passwordConfirm) {
@@ -55,6 +73,17 @@ export const signIn = async (req: Request, res: Response) => {
     });
     return;
   }
+
+  let nicknames = generateMultipleNicknames(10); // 10개의 후보 생성
+  let existingNicknames = await checkMultipleNicknamesExistence(nicknames);
+
+  // 중복이 있는 경우 다시 시도
+  while (existingNicknames.length > 0) {
+    nicknames = generateMultipleNicknames(10);
+    existingNicknames = await checkMultipleNicknamesExistence(nicknames);
+  }
+
+  const username = nicknames[0];
 
   let encryptedPassword = password;
 
