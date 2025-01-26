@@ -23,12 +23,30 @@ export const getUser = async (req: Request, res: Response) => {
     return;
   }
 
-  if (userId === currentUserId) {
-    // console.log("myPage!");
+  // not my page
+  if (userId !== currentUserId) {
+    try {
+      user = await User.findById(userId).populate({
+        path: "playlists",
+        select: "_id title followers user",
+        populate: {
+          path: "user",
+          select: "_id username",
+        },
+      });
+    } catch (error) {
+      // 처리 필요
+      console.log(error);
+      res.status(500).send({ ok: false, message: "DB Failed", error: true });
+      return;
+    }
+    res.status(200).send({ ok: true, message: "Get User Success", user });
+    return;
   }
 
   try {
     user = await User.findById(userId)
+      .select("-password")
       .populate({
         path: "recentMusics",
         select: "coverImg title ytId released_at counts duration",
@@ -335,7 +353,7 @@ export const updateUserRecentMusics = async (req: Request, res: Response) => {
       );
       user.recentMusics = [music._id, ...newList];
     } else {
-      user.recentMusics.push(music._id);
+      user.recentMusics = [music._id, ...user.recentMusics];
     }
     await user.save();
   } catch (error) {
@@ -442,6 +460,8 @@ export const updateLikedMusics = async (req: Request, res: Response) => {
 export const updateUserFollowers = async (req: Request, res: Response) => {
   const { userId } = req.params;
   const { activeUserId, addList } = req.body;
+
+  console.log("user follow");
 
   // 처리 필요
   if (!mongoose.Types.ObjectId.isValid(userId)) {

@@ -4,13 +4,14 @@ import User from "../models/PSUser";
 import Music from "../models/PSMusic";
 import mongoose from "mongoose";
 
+// 에러 처리 완료
 // client
 export const getPlaylist = async (req: Request, res: Response) => {
   const { playlistId } = req.params;
 
   let playlist = null;
 
-  // 처리 필요
+  // 처리 완료
   if (!mongoose.Types.ObjectId.isValid(playlistId)) {
     res.status(404).send({
       ok: false,
@@ -47,18 +48,18 @@ export const getPlaylist = async (req: Request, res: Response) => {
         select: "_id username",
       });
   } catch (error) {
-    // 처리 필요
+    // 처리 완료
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error" });
+    res.status(500).send({ ok: false, message: "DB Error", error: true });
     return;
   }
 
-  // 처리 필요
+  // 처리 완료
   if (!playlist) {
     res.status(422).send({ ok: false, message: "No Playlist", error: false });
     return;
   }
-  // console.log(playlist);
+
   res.status(200).send({ ok: true, message: "Get Playlist Success", playlist });
 };
 
@@ -66,6 +67,8 @@ export const getPlaylist = async (req: Request, res: Response) => {
 export const updatePlaylistFollowers = async (req: Request, res: Response) => {
   const { playlistId } = req.params;
   const { activeUserId, addList } = req.body;
+
+  console.log("playlist follow");
 
   let playlist = null;
 

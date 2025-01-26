@@ -93,6 +93,7 @@ export const getAlbums = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Get Albums Success", albums });
 };
 
+// 에러 처리 완료
 // client
 // 어드민 관련은 query 추가하기
 export const getAlbum = async (req: Request, res: Response) => {
@@ -100,7 +101,7 @@ export const getAlbum = async (req: Request, res: Response) => {
 
   let album = null;
 
-  // 처리 필요
+  // 처리 완료
   if (!mongoose.Types.ObjectId.isValid(albumId)) {
     res.status(404).send({
       ok: false,
@@ -143,13 +144,15 @@ export const getAlbum = async (req: Request, res: Response) => {
         ],
       });
   } catch (error) {
-    // 처리 필요
+    // 처리 완료
     console.log(error);
-    res.status(500).send({ ok: false, message: "Get Album Failed" });
+    res
+      .status(500)
+      .send({ ok: false, message: "Get Album Failed", error: true });
     return;
   }
 
-  // 처리 필요
+  // 처리 완료
   if (!album) {
     res.status(422).send({ ok: false, message: "No Album", error: false });
     return;
@@ -302,6 +305,8 @@ export const deleteAlbumMusic = async (req: Request, res: Response) => {
 export const updateAlbumFollowers = async (req: Request, res: Response) => {
   const { albumId } = req.params;
   const { activeUserId, addList } = req.body;
+
+  console.log("fetch");
 
   let album = null;
 

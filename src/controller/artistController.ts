@@ -73,6 +73,7 @@ export const getAllArtists = async (req: Request, res: Response) => {
     .send({ ok: true, message: "Get All Artists Success", allArtists });
 };
 
+// 에러 처리 완료
 // client - Artist.tsx
 // 정보 범위 정하기
 export const getArtist = async (req: Request, res: Response) => {
@@ -80,7 +81,7 @@ export const getArtist = async (req: Request, res: Response) => {
 
   let artist = null;
 
-  // 처리 필요
+  // 처리 완료
   if (!mongoose.Types.ObjectId.isValid(artistId)) {
     res.status(404).send({
       ok: false,
@@ -129,14 +130,20 @@ export const getArtist = async (req: Request, res: Response) => {
           },
         ],
       });
+
+    if (artist && artist.musics) {
+      artist.musics.sort((a, b) => b.counts.views - a.counts.views); // views 기준 내림차순 정렬
+    }
   } catch (error) {
-    // 처리 필요
+    // 처리 완료
     console.log(error);
-    res.status(500).send({ ok: false, message: "Get Artist Failed" });
+    res
+      .status(500)
+      .send({ ok: false, message: "Get Artist Failed", error: true });
     return;
   }
 
-  // 처리 필요
+  // 처리 완료
   if (!artist) {
     res.status(422).send({ ok: false, message: "No Artist", error: false });
     return;
@@ -407,6 +414,8 @@ export const deleteArtistAblum = async (req: Request, res: Response) => {
 export const updateArtistFollowers = async (req: Request, res: Response) => {
   const { artistId } = req.params;
   const { activeUserId, addList } = req.body;
+
+  console.log("get");
 
   let artist = null;
 

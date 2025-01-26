@@ -97,6 +97,7 @@ export const getAllMusics = async (req: Request, res: Response) => {
 
   try {
     allMusics = await Music.find({})
+      .sort({ created_at: -1 })
       .populate({
         path: "artists",
         select: "artistname",

@@ -9,6 +9,7 @@ import { artistRouter } from "./router/artistRouter";
 import { commentRouter } from "./router/commentRouter";
 import { authRouter } from "./router/authRouter";
 import cookieParser from "cookie-parser";
+import { globalRouter } from "./router/globalRouter";
 
 const app: Express = express();
 
@@ -30,5 +31,6 @@ app.use("/artist", artistRouter);
 app.use("/album", albumRouter);
 app.use("/comment", commentRouter);
 app.use("/auth", authRouter);
+app.use("/", globalRouter);
 
 export default app;
