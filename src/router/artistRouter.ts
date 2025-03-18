@@ -23,6 +23,8 @@ artistRouter.post("/", verifyToken, uploadArtist);
 artistRouter.get("/", getAllArtists);
 
 artistRouter.get("/count", getArtistsCount);
+
+// 안쓰고 있음
 artistRouter.get("/:artistId/musics", getArtistMusics);
 artistRouter.get("/:artistId/albums", getArtistAlbums);
 

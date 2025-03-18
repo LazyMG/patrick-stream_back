@@ -5,8 +5,8 @@ import {
   deleteAlbumMusic,
   getAlbum,
   getAlbumMusics,
-  getAlbums,
   getAlbumsCount,
+  getAllAlbums,
   updateAlbum,
   updateAlbumFollowers,
   uploadAlbum,
@@ -15,9 +15,8 @@ import { verifyToken } from "../middleware";
 
 export const albumRouter = express.Router();
 
-// 아티스트 등록
 albumRouter.post("/", verifyToken, uploadAlbum);
-albumRouter.get("/", getAlbums);
+albumRouter.get("/", getAllAlbums);
 
 albumRouter.get("/count", getAlbumsCount);
 

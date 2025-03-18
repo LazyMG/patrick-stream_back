@@ -15,8 +15,9 @@ export const getPlaylist = async (req: Request, res: Response) => {
   if (!mongoose.Types.ObjectId.isValid(playlistId)) {
     res.status(404).send({
       ok: false,
-      message: "Invalid user ID format",
+      message: "Invalid Playlist ID format",
       error: false,
+      type: "ERROR_ID",
     });
     return;
   }
@@ -56,19 +57,43 @@ export const getPlaylist = async (req: Request, res: Response) => {
 
   // 처리 완료
   if (!playlist) {
-    res.status(422).send({ ok: false, message: "No Playlist", error: false });
+    res.status(422).send({
+      ok: false,
+      message: "No Playlist",
+      error: false,
+      type: "NO_DATA",
+    });
     return;
   }
 
-  res.status(200).send({ ok: true, message: "Get Playlist Success", playlist });
+  res.status(200).send({ ok: true, message: "Get Playlist", playlist });
 };
 
+// 에러 처리 완료
 // client
 export const updatePlaylistFollowers = async (req: Request, res: Response) => {
   const { playlistId } = req.params;
   const { activeUserId, addList } = req.body;
 
-  console.log("playlist follow");
+  if (!mongoose.Types.ObjectId.isValid(playlistId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Playlist ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(activeUserId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid User ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
 
   let playlist = null;
 
@@ -76,12 +101,19 @@ export const updatePlaylistFollowers = async (req: Request, res: Response) => {
     playlist = await Playlist.findById(playlistId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Playlist" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Playlist", error: true });
     return;
   }
 
   if (!playlist) {
-    res.status(422).send({ ok: false, message: "No Playlist" });
+    res.status(422).send({
+      ok: false,
+      message: "No Playlist",
+      error: false,
+      type: "NO_DATA",
+    });
     return;
   }
 
@@ -91,12 +123,14 @@ export const updatePlaylistFollowers = async (req: Request, res: Response) => {
     activeUser = await User.findById(activeUserId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error User" });
+    res.status(500).send({ ok: false, message: "DB Error User", error: true });
     return;
   }
 
   if (!activeUser) {
-    res.status(422).send({ ok: false, message: "No User" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No User", error: false, type: "NO_DATA" });
     return;
   }
 
@@ -135,18 +169,65 @@ export const updatePlaylistFollowers = async (req: Request, res: Response) => {
     await Promise.all([playlist.save(), activeUser.save()]);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Playlist with User" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Playlist with User", error: true });
     return;
   }
 
   res.status(200).send({ ok: true, message: "Update Playlist Followers" });
 };
 
+// 에러 처리 완료
 // client
 export const updatePlaylistMusics = async (req: Request, res: Response) => {
   const { playlistId } = req.params;
   const { musicId, addMusic } = req.body;
   const currentUserId = req.userId;
+
+  if (!mongoose.Types.ObjectId.isValid(playlistId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Playlist ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
+  if (Array.isArray(musicId)) {
+    musicId.forEach((id) => {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        res.status(404).send({
+          ok: false,
+          message: "Invalid Music ID format",
+          error: false,
+          type: "ERROR_ID",
+        });
+        return;
+      }
+    });
+  } else {
+    if (!mongoose.Types.ObjectId.isValid(musicId)) {
+      res.status(404).send({
+        ok: false,
+        message: "Invalid Music ID format",
+        error: false,
+        type: "ERROR_ID",
+      });
+      return;
+    }
+  }
+
+  if (!currentUserId) {
+    res.status(404).send({
+      ok: false,
+      message: "No Login",
+      error: false,
+      type: "NO_ACCESS",
+    });
+    return;
+  }
 
   let playlist = null;
 
@@ -154,19 +235,29 @@ export const updatePlaylistMusics = async (req: Request, res: Response) => {
     playlist = await Playlist.findById(playlistId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Playlist" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Playlist", error: true });
     return;
   }
 
   if (!playlist) {
-    res.status(422).send({ ok: false, message: "No Playlist" });
+    res.status(422).send({
+      ok: false,
+      message: "No Playlist",
+      error: false,
+      type: "NO_DATA",
+    });
     return;
   }
 
   if (!playlist.user.equals(currentUserId)) {
-    res
-      .status(422)
-      .send({ ok: false, message: "This is not a User's Playlist" });
+    res.status(422).send({
+      ok: false,
+      message: "This is not a User's Playlist",
+      error: false,
+      type: "NO_ACCESS",
+    });
     return;
   }
 
@@ -193,17 +284,40 @@ export const updatePlaylistMusics = async (req: Request, res: Response) => {
     await playlist.save();
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Playlist Musics" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Playlist Musics", error: true });
     return;
   }
 
   res.status(200).send({ ok: true, message: "Update Playlist Musics" });
 };
 
+// 에러 처리 완료
 // client
 export const deletePlaylist = async (req: Request, res: Response) => {
   const { playlistId } = req.params;
   const currentUserId = req.userId;
+
+  if (!mongoose.Types.ObjectId.isValid(playlistId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Playlist ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
+  if (!currentUserId) {
+    res.status(404).send({
+      ok: false,
+      message: "No Login",
+      error: false,
+      type: "NO_ACCESS",
+    });
+    return;
+  }
 
   let playlist = null;
 
@@ -215,19 +329,31 @@ export const deletePlaylist = async (req: Request, res: Response) => {
   } catch (error) {
     // 처리 필요
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Failed Playlist" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Failed Playlist", error: true });
     return;
   }
 
   // 처리 필요
   if (!playlist) {
-    res.status(422).send({ ok: false, message: "No Playlist" });
+    res.status(422).send({
+      ok: false,
+      message: "No Playlist",
+      error: false,
+      type: "NO_DATA",
+    });
     return;
   }
 
   // 처리 필요
   if (!playlist.user.equals(currentUserId)) {
-    res.status(422).send({ ok: false, message: "Access Denied" });
+    res.status(422).send({
+      ok: false,
+      message: "Access Denied",
+      error: false,
+      type: "NO_ACCESS",
+    });
     return;
   }
 
@@ -235,7 +361,12 @@ export const deletePlaylist = async (req: Request, res: Response) => {
     const owner = await User.findById(currentUserId);
     if (!owner) {
       // 처리 필요
-      res.status(422).send({ ok: false, message: "No Owner Found" });
+      res.status(422).send({
+        ok: false,
+        message: "No Owner Found",
+        error: false,
+        type: "NO_DATA",
+      });
       return;
     }
 
@@ -246,9 +377,11 @@ export const deletePlaylist = async (req: Request, res: Response) => {
   } catch (error) {
     // 처리 필요
     console.log(error);
-    res
-      .status(500)
-      .send({ ok: false, message: "DB Error Removing from Owner" });
+    res.status(500).send({
+      ok: false,
+      message: "DB Error Removing from Owner",
+      error: true,
+    });
     return;
   }
 
@@ -269,9 +402,11 @@ export const deletePlaylist = async (req: Request, res: Response) => {
   } catch (error) {
     // 처리 필요
     console.log(error);
-    res
-      .status(500)
-      .send({ ok: false, message: "DB Error Removing from Followers" });
+    res.status(500).send({
+      ok: false,
+      message: "DB Error Removing from Followers",
+      error: true,
+    });
     return;
   }
 
@@ -280,7 +415,9 @@ export const deletePlaylist = async (req: Request, res: Response) => {
   } catch (error) {
     console.log(error);
     // 처리 필요
-    res.status(500).send({ ok: false, message: "DB Error Deleting Playlist" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Deleting Playlist", error: true });
     return;
   }
   res.status(200).send({ ok: true, message: "Delete Playlist" });

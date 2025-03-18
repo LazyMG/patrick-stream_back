@@ -6,6 +6,7 @@ import {
   updateLikedMusics,
   updateUserRecentMusics,
   updateUserFollowers,
+  updateUserInfo,
 } from "../controller/userController";
 import { verifyToken } from "../middleware";
 
@@ -17,6 +18,8 @@ userRouter.get("/:userId", verifyToken, getUser);
 userRouter.post("/:userId/playlist", verifyToken, createUserPlaylist);
 // 사용자의 전체 재생목록
 userRouter.get("/:userId/allPlaylists", verifyToken, getUserAllPlaylists);
+
+userRouter.patch("/:userId", verifyToken, updateUserInfo);
 
 // 사용자의 재생목록
 userRouter.get("/:userId/playlists", () => {});

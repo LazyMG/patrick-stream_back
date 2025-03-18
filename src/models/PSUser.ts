@@ -21,6 +21,7 @@ interface IUser extends Document {
   followings?: Following;
   created_at: Date;
   likedComments: Array<Types.ObjectId>;
+  isSocial: boolean;
 }
 
 const UserSchema: Schema = new Schema({
@@ -62,6 +63,7 @@ const UserSchema: Schema = new Schema({
   likedComments: [
     { type: mongoose.Schema.Types.ObjectId, ref: "PSComment", default: [] },
   ],
+  isSocial: { type: Boolean, required: true },
 });
 
 const User = mongoose.model<IUser>("PSUser", UserSchema);

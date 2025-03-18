@@ -5,6 +5,7 @@ import Album from "../models/PSAlbum";
 import Artist from "../models/PSArtist";
 import Playlist from "../models/PSPlaylist";
 import User from "../models/PSUser";
+import mongoose from "mongoose";
 
 //1. 수동 validate
 //released_at:0000-00-00 형식
@@ -17,6 +18,7 @@ import User from "../models/PSUser";
 //released_at:YYMMDD 형식
 //모두 0000-00-00 형식으로 바꾸기
 //duration: 초 단위
+// 에러 처리 완료
 // admin
 export const uploadMusic = async (
   req: Request<{}, {}, { musicData: IMusicInput }>,
@@ -26,7 +28,12 @@ export const uploadMusic = async (
   const userId = req.userId;
 
   if (!userId) {
-    res.status(422).send({ ok: false, message: "Access Denied" });
+    res.status(422).send({
+      ok: false,
+      message: "Access Denied",
+      error: false,
+      type: "NO_ACCESS",
+    });
     return;
   }
 
@@ -53,9 +60,12 @@ export const uploadMusic = async (
 
   if (isMusicExist) {
     console.log(isMusicExist);
-    res
-      .status(200)
-      .send({ ok: false, message: "Already Exists Music", error: false });
+    res.status(200).send({
+      ok: false,
+      message: "Already Exists Music",
+      error: false,
+      type: "EXIST_MUSIC",
+    });
     return;
   }
 
@@ -74,9 +84,10 @@ export const uploadMusic = async (
     return;
   }
 
-  res.status(200).send({ ok: true, message: "Upload Success" });
+  res.status(200).send({ ok: true, message: "Upload Music" });
 };
 
+// 에러 처리 완료
 // admin
 export const getMusicsCount = async (req: Request, res: Response) => {
   let counts = 0;
@@ -85,12 +96,16 @@ export const getMusicsCount = async (req: Request, res: Response) => {
     counts = await Music.countDocuments();
   } catch (error) {
     console.log(error);
-    res.status(400).send({ ok: false, message: "Get Count Failed" });
+    res
+      .status(400)
+      .send({ ok: false, message: "DB Error Music Counts", error: true });
+    return;
   }
 
-  res.status(200).send({ ok: true, message: "Get Count Success", counts });
+  res.status(200).send({ ok: true, message: "Get Music Count", counts });
 };
 
+// 에러 처리 완료
 // admin
 export const getAllMusics = async (req: Request, res: Response) => {
   let allMusics = [];
@@ -108,17 +123,27 @@ export const getAllMusics = async (req: Request, res: Response) => {
       });
   } catch (error) {
     console.log(error);
-    res.status(400).send({ ok: false, message: "Get All Musics Failed" });
+    res.status(400).send({ ok: false, message: "DB Error Music", error: true });
+    return;
   }
 
-  res
-    .status(200)
-    .send({ ok: true, message: "Get All Musics Success", allMusics });
+  res.status(200).send({ ok: true, message: "Get All Musics", allMusics });
 };
 
+// 에러 처리 완료
 // admin
 export const getMusic = async (req: Request, res: Response) => {
   const { musicId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(musicId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Music ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
 
   let music = null;
 
@@ -134,12 +159,21 @@ export const getMusic = async (req: Request, res: Response) => {
       });
   } catch (error) {
     console.log(error);
-    res.status(400).send({ ok: false, message: "Get Music Failed" });
+    res.status(500).send({ ok: false, message: "DB Error Music", error: true });
+    return;
   }
 
-  res.status(200).send({ ok: true, message: "Get Music Success", music });
+  if (!music) {
+    res
+      .status(422)
+      .send({ ok: false, message: "No Music", error: false, type: "NO_DATA" });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Get Music", music });
 };
 
+// 에러 처리 완료
 // client
 export const getNewMusics = async (req: Request, res: Response) => {
   let musics = null;
@@ -164,11 +198,12 @@ export const getNewMusics = async (req: Request, res: Response) => {
 
   res.status(200).send({
     ok: true,
-    message: "New Musics",
+    message: "Get New Musics",
     musics: musics.length >= 20 ? musics.slice(0, 20) : musics,
   });
 };
 
+// 에러 처리 완료
 // client
 export const getTrendingMusics = async (req: Request, res: Response) => {
   let musics = null;
@@ -193,11 +228,13 @@ export const getTrendingMusics = async (req: Request, res: Response) => {
 
   res.status(200).send({
     ok: true,
-    message: "Trending Musics",
+    message: "Get Trending Musics",
     musics: musics.length >= 20 ? musics.slice(0, 20) : musics,
   });
 };
 
+// 에러 처리 완료
+// client
 export const getPopularMusics = async (req: Request, res: Response) => {
   let musics = null;
 
@@ -221,14 +258,25 @@ export const getPopularMusics = async (req: Request, res: Response) => {
 
   res.status(200).send({
     ok: true,
-    message: "Popular Musics",
+    message: "Get Popular Musics",
     musics: musics.length >= 20 ? musics.slice(0, 20) : musics,
   });
 };
 
+// 에러 처리 완료
 // client
 export const updateView = async (req: Request, res: Response) => {
   const { musicId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(musicId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Music ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
 
   let music = null;
 
@@ -236,12 +284,14 @@ export const updateView = async (req: Request, res: Response) => {
     music = await Music.findById(musicId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Music" });
+    res.status(500).send({ ok: false, message: "DB Error Music", error: true });
     return;
   }
 
   if (!music) {
-    res.status(422).send({ ok: false, message: "No Music" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Music", type: "NO_DATA", error: false });
     return;
   }
 
@@ -250,21 +300,40 @@ export const updateView = async (req: Request, res: Response) => {
     await music.save();
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Music View Update" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Music View Update", error: true });
     return;
   }
 
   res.status(200).send({ ok: true, message: "Increase View!" });
 };
 
+// 에러 처리 완료
 // admin
 export const updateMusic = async (req: Request, res: Response) => {
   const { musicId } = req.params;
   const { changedFields } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(musicId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Music ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
   const userId = req.userId;
 
   if (!userId) {
-    res.status(422).send({ ok: false, message: "Access Denied" });
+    res.status(422).send({
+      ok: false,
+      message: "Access Denied",
+      error: false,
+      type: "NO_ACCESS",
+    });
     return;
   }
 
@@ -278,24 +347,45 @@ export const updateMusic = async (req: Request, res: Response) => {
     );
 
     if (!updatedMusic) {
-      res.status(404).send({ ok: false, message: "No Music" });
+      res.status(404).send({
+        ok: false,
+        message: "No Music",
+        error: false,
+        type: "NO_DATA",
+      });
       return;
     }
-    res.status(200).send({ ok: true, message: "Music Updated" });
+    res.status(200).send({ ok: true, message: "Update Music" });
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Music" });
+    res.status(500).send({ ok: false, message: "DB Error Music", error: true });
     return;
   }
 };
 
+// 에러 처리 완료
 // admin
 export const deleteMusic = async (req: Request, res: Response) => {
   const { musicId } = req.params;
   const userId = req.userId;
 
+  if (!mongoose.Types.ObjectId.isValid(musicId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Music ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
   if (!userId) {
-    res.status(404).send({ ok: false, message: "Access Denied" });
+    res.status(404).send({
+      ok: false,
+      message: "Access Denied",
+      error: false,
+      type: "NO_ACCESS",
+    });
     return;
   }
 
@@ -305,12 +395,16 @@ export const deleteMusic = async (req: Request, res: Response) => {
     music = await Music.findById(musicId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Erorr Get Music" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Get Music", error: true });
     return;
   }
 
   if (!music) {
-    res.status(422).send({ ok: false, message: "No Music" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Music", error: false, type: "NO_DATA" });
     return;
   }
 
@@ -321,8 +415,10 @@ export const deleteMusic = async (req: Request, res: Response) => {
       { $pull: { musics: music._id } }
     );
   } catch (error) {
-    console.log("Error removing music from albums:", error);
-    res.status(500).send({ ok: false, message: "DB Error Albums Pull" });
+    console.log(error);
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Albums", error: true });
     return;
   }
 
@@ -333,8 +429,10 @@ export const deleteMusic = async (req: Request, res: Response) => {
       { $pull: { musics: music._id } }
     );
   } catch (error) {
-    console.log("Error removing music from artists:", error);
-    res.status(500).send({ ok: false, message: "DB Error Artists Pull" });
+    console.log(error);
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Artists", error: true });
     return;
   }
 
@@ -352,8 +450,8 @@ export const deleteMusic = async (req: Request, res: Response) => {
       }
     );
   } catch (error) {
-    console.log("Error removing music from users' musics:", error);
-    res.status(500).send({ ok: false, message: "DB Error Users Pull" });
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Users", error: true });
     return;
   }
 
@@ -364,8 +462,10 @@ export const deleteMusic = async (req: Request, res: Response) => {
       { $pull: { musics: music._id } }
     );
   } catch (error) {
-    console.log("Error removing music from playlists:", error);
-    res.status(500).send({ ok: false, message: "DB Error Playlists Pull" });
+    console.log(error);
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Playlists", error: true });
     return;
   }
 
@@ -374,7 +474,9 @@ export const deleteMusic = async (req: Request, res: Response) => {
     await music.deleteOne();
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Delete Music" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Delete Music", error: true });
     return;
   }
 

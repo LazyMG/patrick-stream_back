@@ -6,6 +6,7 @@ import User from "../models/PSUser";
 import Artist from "../models/PSArtist";
 import mongoose from "mongoose";
 
+// 에러 처리 완료
 // admin
 export const uploadAlbum = async (
   req: Request<{}, {}, { albumData: IAlbumInput }>,
@@ -15,7 +16,12 @@ export const uploadAlbum = async (
   const userId = req.userId;
 
   if (!userId) {
-    res.status(422).send({ ok: false, message: "Access Denied" });
+    res.status(422).send({
+      ok: false,
+      message: "Access Denied",
+      error: false,
+      type: "NO_ACCESS",
+    });
     return;
   }
 
@@ -39,13 +45,14 @@ export const uploadAlbum = async (
     });
   } catch (error) {
     console.log(error);
-    res.status(400).send({ ok: false, message: "Upload Failed" });
+    res.status(400).send({ ok: false, message: "DB Error Album", error: true });
     return;
   }
 
-  res.status(200).send({ ok: true, message: "Upload Success" });
+  res.status(200).send({ ok: true, message: "Upload Album" });
 };
 
+// 에러 처리 완료
 // admin
 export const getAlbumsCount = async (req: Request, res: Response) => {
   let counts = 0;
@@ -54,14 +61,18 @@ export const getAlbumsCount = async (req: Request, res: Response) => {
     counts = await Album.countDocuments();
   } catch (error) {
     console.log(error);
-    res.status(400).send({ ok: false, message: "Get Count Failed" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Album Counts", error: true });
+    return;
   }
 
-  res.status(200).send({ ok: true, message: "Get Count Success", counts });
+  res.status(200).send({ ok: true, message: "Get Albums Count", counts });
 };
 
+// 에러 처리 완료
 // admin
-export const getAlbums = async (req: Request, res: Response) => {
+export const getAllAlbums = async (req: Request, res: Response) => {
   const { filterByMusicsLength } = req.query;
   let albums = [];
 
@@ -86,11 +97,11 @@ export const getAlbums = async (req: Request, res: Response) => {
     }
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "Get Albums Failed" });
+    res.status(500).send({ ok: false, message: "DB Error Album", error: true });
     return;
   }
 
-  res.status(200).send({ ok: true, message: "Get Albums Success", albums });
+  res.status(200).send({ ok: true, message: "Get All Albums", albums });
 };
 
 // 에러 처리 완료
@@ -98,6 +109,7 @@ export const getAlbums = async (req: Request, res: Response) => {
 // 어드민 관련은 query 추가하기
 export const getAlbum = async (req: Request, res: Response) => {
   const { albumId } = req.params;
+  const { filter } = req.query;
 
   let album = null;
 
@@ -105,65 +117,121 @@ export const getAlbum = async (req: Request, res: Response) => {
   if (!mongoose.Types.ObjectId.isValid(albumId)) {
     res.status(404).send({
       ok: false,
-      message: "Invalid user ID format",
+      message: "Invalid Album ID format",
       error: false,
+      type: "ERROR_ID",
     });
     return;
   }
 
-  //client 관점
-  // 아티스트 이름, 아이디, 이미지
-  // 음악 제목, ytId, 재생 횟수
-  try {
-    album = await Album.findById(albumId)
-      .populate({
-        path: "artists",
-        select: "artistname _id coverImg",
-      })
-      .populate({
-        path: "musics",
-        select: "ytId title counts duration coverImg released_at",
-        match: {
-          $or: [
-            { artists: { $exists: true, $ne: [] } },
-            { album: { $exists: true, $ne: null } },
-          ],
-        },
-        options: {
-          sort: { index: 1 },
-        },
-        populate: [
-          {
-            path: "artists",
-            select: "_id artistname",
+  if (filter === "all") {
+    try {
+      album = await Album.findById(albumId)
+        .populate({
+          path: "artists",
+          select: "artistname _id coverImg",
+        })
+        .populate({
+          path: "musics",
+          select: "_id ytId title released_at",
+          options: {
+            sort: { index: 1 },
           },
+          populate: [
+            {
+              path: "artists",
+              select: "_id artistname",
+            },
+            {
+              path: "album",
+              select: "_id title",
+            },
+          ],
+        });
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .send({ ok: false, message: "DB Error Album", error: true });
+      return;
+    }
+  } else {
+    //client 관점
+    // 아티스트 이름, 아이디, 이미지
+    // 음악 제목, ytId, 재생 횟수
+    try {
+      album = await Album.findOne({
+        _id: albumId,
+        $and: [
+          { artists: { $exists: true, $not: { $size: 0 } } }, // artists 배열이 비어있지 않은 경우
           {
-            path: "album",
-            select: "_id title",
+            $expr: { $eq: [{ $size: "$musics" }, "$length"] }, // musics 배열의 길이와 length 필드 값이 같은 경우
           },
         ],
-      });
-  } catch (error) {
-    // 처리 완료
-    console.log(error);
-    res
-      .status(500)
-      .send({ ok: false, message: "Get Album Failed", error: true });
-    return;
+      })
+        .populate({
+          path: "artists",
+          select: "artistname _id coverImg",
+        })
+        .populate({
+          path: "musics",
+          select: "ytId title counts duration coverImg released_at",
+          match: {
+            $and: [
+              { artists: { $exists: true, $ne: [] } },
+              { album: { $exists: true, $ne: null } },
+            ],
+          },
+          options: {
+            sort: { index: 1 }, // index 기준 정렬
+          },
+          populate: [
+            {
+              path: "artists",
+              select: "_id artistname",
+            },
+            {
+              path: "album",
+              select: "_id title",
+            },
+          ],
+        })
+        .lean(); // 데이터를 JSON 형태로 변환
+    } catch (error) {
+      // 처리 완료
+      console.log(error);
+      res
+        .status(500)
+        .send({ ok: false, message: "DB Error Album", error: true });
+      return;
+    }
   }
 
   // 처리 완료
   if (!album) {
-    res.status(422).send({ ok: false, message: "No Album", error: false });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Album", error: false, type: "NO_DATA" });
     return;
   }
 
-  res.status(200).send({ ok: true, message: "Get Album Success", album });
+  res.status(200).send({ ok: true, message: "Get Album", album });
 };
 
+// 안 쓰고 있음
 // admin
 export const getAlbumMusics = async (req: Request, res: Response) => {
   const { albumId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(albumId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Album ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
 
   let musics = [];
 
@@ -175,19 +243,49 @@ export const getAlbumMusics = async (req: Request, res: Response) => {
     musics = album.musics;
   } catch (error) {
     console.log(error);
-    res.status(400).send({ ok: false, message: "Get Album Musics Failed" });
+    res.status(400).send({ ok: false, message: "DB Error Album", error: true });
     return;
   }
 
-  res
-    .status(200)
-    .send({ ok: true, message: "Get Album Musics Success", musics });
+  res.status(200).send({ ok: true, message: "Get Album Musics", musics });
 };
 
+// 에러 처리 완료
 // admin
 export const addMusic = async (req: Request, res: Response) => {
   const { albumId } = req.params;
   const { musicId } = req.body;
+  const userId = req.userId;
+
+  if (!userId) {
+    res.status(404).send({
+      ok: false,
+      message: "Access Denied",
+      error: false,
+      type: "NO_ACCESS",
+    });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(albumId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Album ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(musicId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Music ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
 
   let album = null;
 
@@ -200,7 +298,9 @@ export const addMusic = async (req: Request, res: Response) => {
   }
 
   if (!album) {
-    res.status(422).send({ ok: false, message: "No Album" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Album", error: false, type: "NO_DATA" });
     return;
   }
 
@@ -210,12 +310,14 @@ export const addMusic = async (req: Request, res: Response) => {
     music = await Music.findById(musicId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Music" });
+    res.status(500).send({ ok: false, message: "DB Error Music", error: true });
     return;
   }
 
   if (!music) {
-    res.status(422).send({ ok: false, message: "No Music" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Music", type: "NO_DATA", error: false });
     return;
   }
 
@@ -225,22 +327,50 @@ export const addMusic = async (req: Request, res: Response) => {
     music.album = album._id;
     await music.save();
   } catch (error) {
-    res.status(500).send({ ok: false, message: "DB Error Connect" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Connect", error: true });
     return;
   }
 
-  res.status(200).send({ ok: true, message: "Music Album Connect Success" });
+  res.status(200).send({ ok: true, message: "Connect Music and Album" });
 };
 
+// 에러 처리 완료
 // admin
 export const deleteAlbumMusic = async (req: Request, res: Response) => {
   const { albumId } = req.params;
   const { musicId } = req.body;
 
+  if (!mongoose.Types.ObjectId.isValid(albumId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Album ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(musicId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Music ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
   const userId = req.userId;
 
   if (!userId) {
-    res.status(404).send({ ok: false, message: "Access Denied" });
+    res.status(404).send({
+      ok: false,
+      message: "Access Denied",
+      error: false,
+      type: "NO_ACCESS",
+    });
     return;
   }
 
@@ -250,12 +380,14 @@ export const deleteAlbumMusic = async (req: Request, res: Response) => {
     album = await Album.findById(albumId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Album" });
+    res.status(500).send({ ok: false, message: "DB Error Album", error: true });
     return;
   }
 
   if (!album) {
-    res.status(422).send({ ok: false, message: "No Album" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Album", error: false, type: "NO_DATA" });
     return;
   }
 
@@ -265,12 +397,14 @@ export const deleteAlbumMusic = async (req: Request, res: Response) => {
     music = await Music.findById(musicId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Music" });
+    res.status(500).send({ ok: false, message: "DB Error Music", error: true });
     return;
   }
 
   if (!music) {
-    res.status(422).send({ ok: false, message: "No Music" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Music", error: false, type: "NO_DATA" });
     return;
   }
 
@@ -278,6 +412,8 @@ export const deleteAlbumMusic = async (req: Request, res: Response) => {
     res.status(422).send({
       ok: false,
       message: "This Music is not in the given Album",
+      error: false,
+      type: "NOT_MATCH",
     });
     return;
   }
@@ -292,21 +428,42 @@ export const deleteAlbumMusic = async (req: Request, res: Response) => {
     await music.save();
   } catch (error) {
     console.log(error);
-    res
-      .status(500)
-      .send({ ok: false, message: "DB Error Save Music and Album" });
+    res.status(500).send({
+      ok: false,
+      message: "DB Error Save Music and Album",
+      error: true,
+    });
     return;
   }
 
   res.status(200).send({ ok: true, message: "Delete Music from Album" });
 };
 
+// 에러 처리 완료
 // client
 export const updateAlbumFollowers = async (req: Request, res: Response) => {
   const { albumId } = req.params;
   const { activeUserId, addList } = req.body;
 
-  console.log("fetch");
+  if (!mongoose.Types.ObjectId.isValid(albumId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Album ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(activeUserId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid User ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
 
   let album = null;
 
@@ -314,12 +471,14 @@ export const updateAlbumFollowers = async (req: Request, res: Response) => {
     album = await Album.findById(albumId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Album" });
+    res.status(500).send({ ok: false, message: "DB Error Album", error: true });
     return;
   }
 
   if (!album) {
-    res.status(422).send({ ok: false, message: "No Album" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Album", error: false, type: "NO_DATA" });
     return;
   }
 
@@ -329,12 +488,14 @@ export const updateAlbumFollowers = async (req: Request, res: Response) => {
     activeUser = await User.findById(activeUserId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error User" });
+    res.status(500).send({ ok: false, message: "DB Error User", error: true });
     return;
   }
 
   if (!activeUser) {
-    res.status(422).send({ ok: false, message: "No User" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No User", error: false, type: "NO_DATA" });
     return;
   }
 
@@ -373,21 +534,39 @@ export const updateAlbumFollowers = async (req: Request, res: Response) => {
     await Promise.all([album.save(), activeUser.save()]);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Album with User" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Album with User", error: true });
     return;
   }
 
   res.status(200).send({ ok: true, message: "Update Album Followers" });
 };
 
+// 에러 처리 완료
 // admin
 export const updateAlbum = async (req: Request, res: Response) => {
   const { albumId } = req.params;
   const { changedFields } = req.body;
   const userId = req.userId;
 
+  if (!mongoose.Types.ObjectId.isValid(albumId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Album ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
   if (!userId) {
-    res.status(422).send({ ok: false, message: "Access Denied" });
+    res.status(422).send({
+      ok: false,
+      message: "Access Denied",
+      error: false,
+      type: "NO_ACCESS",
+    });
     return;
   }
 
@@ -401,24 +580,45 @@ export const updateAlbum = async (req: Request, res: Response) => {
     );
 
     if (!updatedAlbum) {
-      res.status(404).send({ ok: false, message: "No Album" });
+      res.status(404).send({
+        ok: false,
+        message: "No Album",
+        error: false,
+        type: "NO_DATA",
+      });
       return;
     }
-    res.status(200).send({ ok: true, message: "Album Updated" });
+    res.status(200).send({ ok: true, message: "Update Album" });
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Album" });
+    res.status(500).send({ ok: false, message: "DB Error Album", error: true });
     return;
   }
 };
 
+// 에러 처리 완료
 // admin
 export const deleteAlbum = async (req: Request, res: Response) => {
   const { albumId } = req.params;
   const userId = req.userId;
 
+  if (!mongoose.Types.ObjectId.isValid(albumId)) {
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Album ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
   if (!userId) {
-    res.status(404).send({ ok: false, message: "Access Denied" });
+    res.status(404).send({
+      ok: false,
+      message: "Access Denied",
+      error: false,
+      type: "NO_ACCESS",
+    });
     return;
   }
 
@@ -428,12 +628,14 @@ export const deleteAlbum = async (req: Request, res: Response) => {
     album = await Album.findById(albumId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Erorr Get Album" });
+    res.status(500).send({ ok: false, message: "DB Erorr Album", error: true });
     return;
   }
 
   if (!album) {
-    res.status(422).send({ ok: false, message: "No Album" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Album", error: false, type: "NO_DATA" });
     return;
   }
 
@@ -441,8 +643,10 @@ export const deleteAlbum = async (req: Request, res: Response) => {
   try {
     await Music.updateMany({ album: album._id }, { $set: { album: null } });
   } catch (error) {
-    console.log("Error removing album from musics:", error);
-    res.status(500).send({ ok: false, message: "DB Error Musics Pull" });
+    console.log(error);
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Musics", error: true });
     return;
   }
 
@@ -453,8 +657,10 @@ export const deleteAlbum = async (req: Request, res: Response) => {
       { $pull: { albums: album._id } }
     );
   } catch (error) {
-    console.log("Error removing album from artists:", error);
-    res.status(500).send({ ok: false, message: "DB Error Artists Pull" });
+    console.log(error);
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Artists", error: true });
     return;
   }
 
@@ -475,9 +681,11 @@ export const deleteAlbum = async (req: Request, res: Response) => {
     }
   } catch (error) {
     console.log(error);
-    res
-      .status(500)
-      .send({ ok: false, message: "DB Error Removing from Followers" });
+    res.status(500).send({
+      ok: false,
+      message: "DB Error Removing from Followers",
+      error: true,
+    });
     return;
   }
 
@@ -486,7 +694,9 @@ export const deleteAlbum = async (req: Request, res: Response) => {
     await album.deleteOne();
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Delete Album" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Delete Album", error: true });
     return;
   }
 

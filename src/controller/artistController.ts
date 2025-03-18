@@ -3,10 +3,10 @@ import { IArtist, IArtistInput } from "../types/dataTypes";
 import Artist from "../models/PSArtist";
 import Music from "../models/PSMusic";
 import Album from "../models/PSAlbum";
-import { populate } from "dotenv";
 import User from "../models/PSUser";
 import mongoose from "mongoose";
 
+// 에러 처리 완료
 // admin
 export const uploadArtist = async (
   req: Request<{}, {}, { artistData: IArtistInput }>,
@@ -16,7 +16,12 @@ export const uploadArtist = async (
   const userId = req.userId;
 
   if (!userId) {
-    res.status(422).send({ ok: false, message: "Access Denied" });
+    res.status(422).send({
+      ok: false,
+      message: "Access Denied",
+      error: false,
+      type: "NO_ACCESS",
+    });
     return;
   }
 
@@ -38,11 +43,16 @@ export const uploadArtist = async (
     });
   } catch (error) {
     console.log(error);
-    res.status(400).send({ ok: false, message: "Upload Failed" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Artist", error: true });
+    return;
   }
-  res.status(200).send({ ok: true, message: "Upload Success" });
+
+  res.status(200).send({ ok: true, message: "Upload Artist" });
 };
 
+// 에러 처리 완료
 // admin
 export const getArtistsCount = async (req: Request, res: Response) => {
   let counts = 0;
@@ -51,12 +61,16 @@ export const getArtistsCount = async (req: Request, res: Response) => {
     counts = await Artist.countDocuments();
   } catch (error) {
     console.log(error);
-    res.status(400).send({ ok: false, message: "Get Count Failed" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Artist", error: true });
+    return;
   }
 
-  res.status(200).send({ ok: true, message: "Get Count Success", counts });
+  res.status(200).send({ ok: true, message: "Get Artists Count", counts });
 };
 
+// 에러 처리 완료
 // admin
 export const getAllArtists = async (req: Request, res: Response) => {
   let allArtists = [];
@@ -65,96 +79,30 @@ export const getAllArtists = async (req: Request, res: Response) => {
     allArtists = await Artist.find({});
   } catch (error) {
     console.log(error);
-    res.status(400).send({ ok: false, message: "Get All Artists Failed" });
-  }
-
-  res
-    .status(200)
-    .send({ ok: true, message: "Get All Artists Success", allArtists });
-};
-
-// 에러 처리 완료
-// client - Artist.tsx
-// 정보 범위 정하기
-export const getArtist = async (req: Request, res: Response) => {
-  const { artistId } = req.params;
-
-  let artist = null;
-
-  // 처리 완료
-  if (!mongoose.Types.ObjectId.isValid(artistId)) {
-    res.status(404).send({
-      ok: false,
-      message: "Invalid user ID format",
-      error: false,
-    });
-    return;
-  }
-
-  try {
-    artist = await Artist.findById(artistId)
-      .populate({
-        path: "musics",
-        select: "coverImg title ytId counts album duration released_at",
-        match: {
-          $or: [
-            { artists: { $exists: true, $ne: [] } },
-            { album: { $exists: true, $ne: null } },
-          ],
-        },
-        populate: [
-          {
-            path: "album",
-            select: "title _id",
-          },
-          {
-            path: "artists",
-            select: "_id artistname",
-          },
-        ],
-      })
-      .populate({
-        path: "albums",
-        select: "coverImg title _id released_at category musics artists",
-        match: {
-          artists: { $exists: true, $ne: [] },
-        },
-        populate: [
-          {
-            path: "musics",
-            select: "ytId title duration",
-          },
-          {
-            path: "artists",
-            select: "_id artistname coverImg",
-          },
-        ],
-      });
-
-    if (artist && artist.musics) {
-      artist.musics.sort((a, b) => b.counts.views - a.counts.views); // views 기준 내림차순 정렬
-    }
-  } catch (error) {
-    // 처리 완료
-    console.log(error);
     res
       .status(500)
-      .send({ ok: false, message: "Get Artist Failed", error: true });
+      .send({ ok: false, message: "DB Error Artist", error: true });
     return;
   }
 
-  // 처리 완료
-  if (!artist) {
-    res.status(422).send({ ok: false, message: "No Artist", error: false });
-    return;
-  }
-
-  res.status(200).send({ ok: true, message: "Get Artist Success", artist });
+  res.status(200).send({ ok: true, message: "Get All Artists", allArtists });
 };
 
+// 안쓰고 있음
 // admin
 export const getArtistMusics = async (req: Request, res: Response) => {
   const { artistId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(artistId)) {
+    console.log("Invalid Artist ID format");
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Artist ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
 
   let musics = [];
 
@@ -166,17 +114,30 @@ export const getArtistMusics = async (req: Request, res: Response) => {
     musics = artist.musics;
   } catch (error) {
     console.log(error);
-    res.status(400).send({ ok: false, message: "Get Artist Failed" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Artist", error: true });
     return;
   }
-  res
-    .status(200)
-    .send({ ok: true, message: "Get Artist Musics Success", musics });
+
+  res.status(200).send({ ok: true, message: "Get Artist Musics", musics });
 };
 
+// 안쓰고 있음
 // admin
 export const getArtistAlbums = async (req: Request, res: Response) => {
   const { artistId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(artistId)) {
+    console.log("Invalid Artist ID format");
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Artist ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
 
   let albums = [];
 
@@ -188,18 +149,52 @@ export const getArtistAlbums = async (req: Request, res: Response) => {
     albums = artist.albums;
   } catch (error) {
     console.log(error);
-    res.status(400).send({ ok: false, message: "Get Artist Failed" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Artist", error: true });
     return;
   }
-  res
-    .status(200)
-    .send({ ok: true, message: "Get Artist Albums Success", albums });
+  res.status(200).send({ ok: true, message: "Get Artist Albums", albums });
 };
 
+// 에러 처리 완료
 // admin
 export const addMusic = async (req: Request, res: Response) => {
   const { artistId } = req.params;
   const { musicId } = req.body;
+  const userId = req.userId;
+
+  if (!userId) {
+    res.status(404).send({
+      ok: false,
+      message: "Access Denied",
+      error: false,
+      type: "NO_ACCESS",
+    });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(artistId)) {
+    console.log("Invalid Artist ID format");
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Artist ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(musicId)) {
+    console.log("Invalid Music ID format");
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Music ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
 
   let artist = null;
 
@@ -207,12 +202,16 @@ export const addMusic = async (req: Request, res: Response) => {
     artist = await Artist.findById(artistId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Artist" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Artist", error: true });
     return;
   }
 
   if (!artist) {
-    res.status(422).send({ ok: false, message: "No Artist" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Artist", error: false, type: "NO_DATA" });
     return;
   }
 
@@ -222,16 +221,16 @@ export const addMusic = async (req: Request, res: Response) => {
     music = await Music.findById(musicId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Music" });
+    res.status(500).send({ ok: false, message: "DB Error Music", error: true });
     return;
   }
 
   if (!music) {
-    res.status(422).send({ ok: false, message: "No Music" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Music", error: false, type: "NO_DATA" });
     return;
   }
-
-  console.log(artist, music);
 
   try {
     artist.musics.push(music._id);
@@ -239,17 +238,54 @@ export const addMusic = async (req: Request, res: Response) => {
     music.artists.push(artist._id);
     await music.save();
   } catch (error) {
-    res.status(500).send({ ok: false, message: "DB Error Connect" });
+    console.log(error);
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Connect Music and Artist" });
     return;
   }
 
-  res.status(200).send({ ok: true, message: "Music Artist Connect Success" });
+  res.status(200).send({ ok: true, message: "Connect Music and Artist" });
 };
 
+// 에러 처리 완료
 // admin
 export const addAlbum = async (req: Request, res: Response) => {
   const { artistId } = req.params;
   const { albumId } = req.body;
+  const userId = req.userId;
+
+  if (!userId) {
+    res.status(404).send({
+      ok: false,
+      message: "Access Denied",
+      error: false,
+      type: "NO_ACCESS",
+    });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(artistId)) {
+    console.log("Invalid Artist ID format");
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Artist ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(albumId)) {
+    console.log("Invalid Album ID format");
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Album ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
 
   let artist = null;
 
@@ -257,12 +293,16 @@ export const addAlbum = async (req: Request, res: Response) => {
     artist = await Artist.findById(artistId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Artist" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Artist", error: true });
     return;
   }
 
   if (!artist) {
-    res.status(422).send({ ok: false, message: "No Artist" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Artist", error: false, type: "NO_DATA" });
     return;
   }
 
@@ -272,12 +312,14 @@ export const addAlbum = async (req: Request, res: Response) => {
     album = await Album.findById(albumId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Album" });
+    res.status(500).send({ ok: false, message: "DB Error Album", error: true });
     return;
   }
 
   if (!album) {
-    res.status(422).send({ ok: false, message: "No Album" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Album", error: false, type: "NO_DATA" });
     return;
   }
 
@@ -287,22 +329,54 @@ export const addAlbum = async (req: Request, res: Response) => {
     album.artists.push(artist._id);
     await album.save();
   } catch (error) {
-    res.status(500).send({ ok: false, message: "DB Error Connect" });
+    console.log(error);
+    res.status(500).send({
+      ok: false,
+      message: "DB Error Connect Album and Artist",
+      error: true,
+    });
     return;
   }
 
-  res.status(200).send({ ok: true, message: "Music Album Connect Success" });
+  res.status(200).send({ ok: true, message: "Connect Album and Artist" });
 };
 
+// 에러 처리 완료
 // admin
 export const deleteArtistMusic = async (req: Request, res: Response) => {
   const { artistId } = req.params;
   const { musicId } = req.body;
-
   const userId = req.userId;
 
   if (!userId) {
-    res.status(404).send({ ok: false, message: "Access Denied" });
+    res.status(404).send({
+      ok: false,
+      message: "Access Denied",
+      error: false,
+      type: "NO_ACCESS",
+    });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(artistId)) {
+    console.log("Invalid Artist ID format");
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Artist ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(musicId)) {
+    console.log("Invalid Music ID format");
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Music ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
     return;
   }
 
@@ -312,12 +386,16 @@ export const deleteArtistMusic = async (req: Request, res: Response) => {
     artist = await Artist.findById(artistId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Artist" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Artist", error: true });
     return;
   }
 
   if (!artist) {
-    res.status(422).send({ ok: false, message: "No Artist" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Artist", error: false, type: "NO_DATA" });
     return;
   }
 
@@ -327,12 +405,14 @@ export const deleteArtistMusic = async (req: Request, res: Response) => {
     music = await Music.findById(musicId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Music" });
+    res.status(500).send({ ok: false, message: "DB Error Music", error: true });
     return;
   }
 
   if (!music) {
-    res.status(422).send({ ok: false, message: "No Music" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Music", error: false, type: "NO_DATA" });
     return;
   }
 
@@ -343,24 +423,53 @@ export const deleteArtistMusic = async (req: Request, res: Response) => {
     await music.save();
   } catch (error) {
     console.log(error);
-    res
-      .status(500)
-      .send({ ok: false, message: "DB Error Save Music and Artist" });
+    res.status(500).send({
+      ok: false,
+      message: "DB Error Save Music and Artist",
+      error: true,
+    });
     return;
   }
 
   res.status(200).send({ ok: true, message: "Delete Music from Artist" });
 };
 
+// 에러 처리 완료
 // admin
 export const deleteArtistAblum = async (req: Request, res: Response) => {
   const { artistId } = req.params;
   const { albumId } = req.body;
-
   const userId = req.userId;
 
   if (!userId) {
-    res.status(404).send({ ok: false, message: "Access Denied" });
+    res.status(404).send({
+      ok: false,
+      message: "Access Denied",
+      error: false,
+      type: "NO_ACCESS",
+    });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(artistId)) {
+    console.log("Invalid Artist ID format");
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Artist ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(albumId)) {
+    console.log("Invalid Album ID format");
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Album ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
     return;
   }
 
@@ -370,12 +479,16 @@ export const deleteArtistAblum = async (req: Request, res: Response) => {
     artist = await Artist.findById(artistId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Artist" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Artist", error: true });
     return;
   }
 
   if (!artist) {
-    res.status(422).send({ ok: false, message: "No Artist" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Artist", error: false, type: "NO_DATA" });
     return;
   }
 
@@ -385,12 +498,12 @@ export const deleteArtistAblum = async (req: Request, res: Response) => {
     album = await Album.findById(albumId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Album" });
+    res.status(500).send({ ok: false, message: "DB Error Album", error: true });
     return;
   }
 
   if (!album) {
-    res.status(422).send({ ok: false, message: "No Album" });
+    res.status(422).send({ ok: false, message: "No Album", error: true });
     return;
   }
 
@@ -401,21 +514,99 @@ export const deleteArtistAblum = async (req: Request, res: Response) => {
     await album.save();
   } catch (error) {
     console.log(error);
-    res
-      .status(500)
-      .send({ ok: false, message: "DB Error Save Album and Artist" });
+    res.status(500).send({
+      ok: false,
+      message: "DB Error Save Album and Artist",
+      error: true,
+    });
     return;
   }
 
   res.status(200).send({ ok: true, message: "Delete Album from Artist" });
 };
 
-// client
-export const updateArtistFollowers = async (req: Request, res: Response) => {
+// 에러 처리 완료
+// admin
+export const updateArtist = async (req: Request, res: Response) => {
   const { artistId } = req.params;
-  const { activeUserId, addList } = req.body;
+  const { changedFields } = req.body;
+  const userId = req.userId;
 
-  console.log("get");
+  if (!mongoose.Types.ObjectId.isValid(artistId)) {
+    console.log("Invalid Artist ID format");
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Artist ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
+  if (!userId) {
+    res.status(422).send({
+      ok: false,
+      message: "Access Denied",
+      error: false,
+      type: "NO_ACCESS",
+    });
+    return;
+  }
+
+  try {
+    const updatedArtist = await Artist.findByIdAndUpdate(
+      artistId,
+      { $set: changedFields }, // 변경된 필드만 덮어씀
+      { new: true, runValidators: true }
+      // new: true → 업데이트된 document를 반환
+      // runValidators: true → 스키마 유효성 검사 반영
+    );
+
+    if (!updatedArtist) {
+      res.status(422).send({
+        ok: false,
+        message: "No Artist",
+        error: false,
+        type: "NO_DATA",
+      });
+      return;
+    }
+    res.status(200).send({ ok: true, message: "Update Artist" });
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Artist", error: true });
+    return;
+  }
+};
+
+// 에러 처리 완료
+// admin
+export const deleteAritst = async (req: Request, res: Response) => {
+  const { artistId } = req.params;
+  const userId = req.userId;
+
+  if (!mongoose.Types.ObjectId.isValid(artistId)) {
+    console.log("Invalid Artist ID format");
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Artist ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
+  if (!userId) {
+    res.status(404).send({
+      ok: false,
+      message: "Access Denied",
+      error: false,
+      type: "NO_ACCESS",
+    });
+    return;
+  }
 
   let artist = null;
 
@@ -423,12 +614,284 @@ export const updateArtistFollowers = async (req: Request, res: Response) => {
     artist = await Artist.findById(artistId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Aritst" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Erorr Artist", error: true });
     return;
   }
 
   if (!artist) {
-    res.status(422).send({ ok: false, message: "No Artist" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No Artist", error: false, type: "NO_DATA" });
+    return;
+  }
+
+  // case 2. delete Artist and contain musics
+  try {
+    await Music.updateMany(
+      { artists: artist._id },
+      { $pull: { artists: artist._id } }
+    );
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Music", error: true });
+    return;
+  }
+
+  // case 3. delete Artist and contain album
+  try {
+    await Album.updateMany(
+      { artists: artist._id },
+      { $pull: { artists: artist._id } }
+    );
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error Album", error: true });
+    return;
+  }
+
+  // case 4. delete Artist included User's following list
+  try {
+    const followerIds = artist.followers.map((follower) => follower._id);
+
+    if (followerIds.length > 0) {
+      const followers = await User.find({ _id: { $in: followerIds } });
+
+      for (const follower of followers) {
+        follower.followings.followingArtists = follower.followings.followingArtists.filter(
+          (item) => item.toString() !== artist._id.toString()
+        );
+      }
+
+      await Promise.all(followers.map((follower) => follower.save()));
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error User", error: true });
+    return;
+  }
+
+  // case 1. delete Artist -> last work
+  try {
+    await artist.deleteOne();
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Delete Artist", error: true });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Delete Artist" });
+};
+
+// 에러 처리 완료
+// admin
+// client - Artist.tsx
+export const getArtist = async (req: Request, res: Response) => {
+  const { artistId } = req.params;
+  const { filter } = req.query;
+
+  let artist = null;
+
+  // 처리 완료
+  if (!mongoose.Types.ObjectId.isValid(artistId)) {
+    console.log("Invalid Artist ID format");
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Artist ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
+  if (filter === "all") {
+    try {
+      artist = await Artist.findById(artistId)
+        .populate({
+          path: "musics",
+          select: "coverImg title ytId counts album duration released_at",
+          match: {
+            $or: [
+              { artists: { $exists: true, $ne: [] } },
+              { album: { $exists: true, $ne: null } },
+            ],
+          },
+          populate: [
+            {
+              path: "album",
+              select: "title _id",
+            },
+            {
+              path: "artists",
+              select: "_id artistname",
+            },
+          ],
+        })
+        .populate({
+          path: "albums",
+          select:
+            "coverImg title _id released_at category musics artists length",
+          match: {
+            artists: { $exists: true, $ne: [] },
+          },
+          populate: [
+            {
+              path: "musics",
+              select: "ytId title duration",
+            },
+            {
+              path: "artists",
+              select: "_id artistname coverImg",
+            },
+          ],
+        });
+
+      if (artist && artist.musics) {
+        artist.musics.sort((a, b) => b.counts.views - a.counts.views); // views 기준 내림차순 정렬
+      }
+    } catch (error) {
+      // 처리 완료
+      console.log(error);
+      res
+        .status(500)
+        .send({ ok: false, message: "DB Error Artist", error: true });
+      return;
+    }
+
+    // 처리 완료
+    if (!artist) {
+      res.status(422).send({
+        ok: false,
+        message: "No Artist",
+        error: false,
+        type: "NO_DATA",
+      });
+      return;
+    }
+
+    res.status(200).send({ ok: true, message: "Get Artist", artist });
+  } else {
+    try {
+      artist = await Artist.findById(artistId)
+        .populate({
+          path: "musics",
+          select: "coverImg title ytId counts album duration released_at",
+          match: {
+            $and: [
+              { artists: { $exists: true, $ne: [] } },
+              { album: { $exists: true, $ne: null } },
+            ],
+          },
+          populate: [
+            {
+              path: "album",
+              select: "title _id",
+            },
+            {
+              path: "artists",
+              select: "_id artistname",
+            },
+          ],
+        })
+        .populate({
+          path: "albums",
+          select:
+            "coverImg title _id released_at category musics artists length",
+          match: {
+            $and: [
+              { artists: { $exists: true, $ne: [] } },
+              { musics: { $exists: true, $type: "array" } }, // musics가 배열인지 확인
+              {
+                $expr: { $eq: [{ $size: "$musics" }, "$length"] }, // musics 배열의 길이와 length 값이 같은 경우만
+              },
+            ],
+          },
+          populate: [
+            {
+              path: "musics",
+              select: "ytId title duration",
+            },
+            {
+              path: "artists",
+              select: "_id artistname coverImg",
+            },
+          ],
+        });
+
+      if (artist && artist.musics) {
+        artist.musics.sort((a, b) => b.counts.views - a.counts.views); // views 기준 내림차순 정렬
+      }
+    } catch (error) {
+      // 처리 완료
+      console.log(error);
+      res
+        .status(500)
+        .send({ ok: false, message: "DB Error Artist", error: true });
+      return;
+    }
+
+    // 처리 완료
+    if (!artist) {
+      res.status(422).send({
+        ok: false,
+        message: "No Artist",
+        error: false,
+        type: "NO_DATA",
+      });
+      return;
+    }
+
+    res.status(200).send({ ok: true, message: "Get Artist", artist });
+  }
+};
+
+// 에러 처리 완료
+// client
+export const updateArtistFollowers = async (req: Request, res: Response) => {
+  const { artistId } = req.params;
+  const { activeUserId, addList } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(artistId)) {
+    console.log("Invalid Artist ID format");
+    res.status(404).send({
+      ok: false,
+      message: "Invalid Artist ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(activeUserId)) {
+    console.log("Invalid User ID format");
+    res.status(404).send({
+      ok: false,
+      message: "Invalid User ID format",
+      error: false,
+      type: "ERROR_ID",
+    });
+    return;
+  }
+
+  let artist = null;
+
+  try {
+    artist = await Artist.findById(artistId);
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Aritst", error: true });
+    return;
+  }
+
+  if (!artist) {
+    res
+      .status(422)
+      .send({ ok: false, message: "No Artist", error: false, type: "NO_DATA" });
     return;
   }
 
@@ -438,12 +901,14 @@ export const updateArtistFollowers = async (req: Request, res: Response) => {
     activeUser = await User.findById(activeUserId);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error User" });
+    res.status(500).send({ ok: false, message: "DB Error User", error: true });
     return;
   }
 
   if (!activeUser) {
-    res.status(422).send({ ok: false, message: "No User" });
+    res
+      .status(422)
+      .send({ ok: false, message: "No User", error: false, type: "NO_DATA" });
     return;
   }
 
@@ -485,125 +950,11 @@ export const updateArtistFollowers = async (req: Request, res: Response) => {
     await Promise.all([artist.save(), activeUser.save()]);
   } catch (error) {
     console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Artist with User" });
+    res
+      .status(500)
+      .send({ ok: false, message: "DB Error Artist and User", error: true });
     return;
   }
 
   res.status(200).send({ ok: true, message: "Update Artist Followers" });
-};
-
-// admin
-export const updateArtist = async (req: Request, res: Response) => {
-  const { artistId } = req.params;
-  const { changedFields } = req.body;
-  const userId = req.userId;
-
-  if (!userId) {
-    res.status(422).send({ ok: false, message: "Access Denied" });
-    return;
-  }
-
-  try {
-    const updatedArtist = await Artist.findByIdAndUpdate(
-      artistId,
-      { $set: changedFields }, // 변경된 필드만 덮어씀
-      { new: true, runValidators: true }
-      // new: true → 업데이트된 document를 반환
-      // runValidators: true → 스키마 유효성 검사 반영
-    );
-
-    if (!updatedArtist) {
-      res.status(404).send({ ok: false, message: "No Artist" });
-      return;
-    }
-    res.status(200).send({ ok: true, message: "Artist Updated" });
-  } catch (error) {
-    console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Artist" });
-    return;
-  }
-};
-
-// admin
-export const deleteAritst = async (req: Request, res: Response) => {
-  const { artistId } = req.params;
-  const userId = req.userId;
-
-  if (!userId) {
-    res.status(404).send({ ok: false, message: "Access Denied" });
-    return;
-  }
-
-  let artist = null;
-
-  try {
-    artist = await Artist.findById(artistId);
-  } catch (error) {
-    console.log(error);
-    res.status(500).send({ ok: false, message: "DB Erorr Get Artist" });
-    return;
-  }
-
-  if (!artist) {
-    res.status(422).send({ ok: false, message: "No Artist" });
-    return;
-  }
-
-  // case 2. delete Artist and contain musics
-  try {
-    await Music.updateMany(
-      { artists: artist._id },
-      { $pull: { artists: artist._id } }
-    );
-  } catch (error) {
-    console.log("Error removing artist from musics:", error);
-    res.status(500).send({ ok: false, message: "DB Error Musics Pull" });
-    return;
-  }
-
-  // case 3. delete Artist and contain album
-  try {
-    await Album.updateMany(
-      { artists: artist._id },
-      { $pull: { artists: artist._id } }
-    );
-  } catch (error) {
-    console.log("Error removing artist from albums:", error);
-    res.status(500).send({ ok: false, message: "DB Error Albums Pull" });
-    return;
-  }
-
-  // case 4. delete Artist included User's following list
-  try {
-    const followerIds = artist.followers.map((follower) => follower._id);
-
-    if (followerIds.length > 0) {
-      const followers = await User.find({ _id: { $in: followerIds } });
-
-      for (const follower of followers) {
-        follower.followings.followingArtists = follower.followings.followingArtists.filter(
-          (item) => item.toString() !== artist._id.toString()
-        );
-      }
-
-      await Promise.all(followers.map((follower) => follower.save()));
-    }
-  } catch (error) {
-    console.log(error);
-    res
-      .status(500)
-      .send({ ok: false, message: "DB Error Removing from Followers" });
-    return;
-  }
-
-  // case 1. delete Artist -> last work
-  try {
-    await artist.deleteOne();
-  } catch (error) {
-    console.log(error);
-    res.status(500).send({ ok: false, message: "DB Error Delete Artist" });
-    return;
-  }
-
-  res.status(200).send({ ok: true, message: "Delete Artist" });
 };

@@ -1,11 +1,13 @@
 import express from "express";
 import {
+  checkPassword,
   emailValidate,
   getAdmin,
   getSession,
   googleLogin,
   login,
   logOut,
+  refreshAccessToken,
   signIn,
 } from "../controller/authController";
 import { verifyToken } from "../middleware";
@@ -21,3 +23,6 @@ authRouter.post("/logout", logOut);
 authRouter.get("/session", verifyToken, getSession);
 authRouter.get("/admin", verifyToken, getAdmin);
 authRouter.post("/email", emailValidate);
+
+authRouter.post("/password", verifyToken, checkPassword);
+authRouter.post("/refreshToken", refreshAccessToken);

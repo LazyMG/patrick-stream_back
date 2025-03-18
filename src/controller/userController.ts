@@ -19,28 +19,30 @@ export const getUser = async (req: Request, res: Response) => {
       ok: false,
       message: "Invalid user ID format",
       error: false,
+      type: "ERROR_ID",
     });
     return;
   }
 
-  // not my page
+  // 자신이 아닌 다른 사용자일 경우
   if (userId !== currentUserId) {
     try {
-      user = await User.findById(userId).populate({
-        path: "playlists",
-        select: "_id title followers user",
-        populate: {
-          path: "user",
-          select: "_id username",
-        },
-      });
+      user = await User.findById(userId)
+        .select("-password")
+        .populate({
+          path: "playlists",
+          select: "_id title followers user",
+          populate: {
+            path: "user",
+            select: "_id username",
+          },
+        });
     } catch (error) {
-      // 처리 필요
       console.log(error);
       res.status(500).send({ ok: false, message: "DB Failed", error: true });
       return;
     }
-    res.status(200).send({ ok: true, message: "Get User Success", user });
+    res.status(200).send({ ok: true, message: "Get User", user });
     return;
   }
 
@@ -51,8 +53,8 @@ export const getUser = async (req: Request, res: Response) => {
         path: "recentMusics",
         select: "coverImg title ytId released_at counts duration",
         match: {
-          $or: [
-            { artists: { $exists: true, $ne: [] } },
+          $and: [
+            { artists: { $exists: true, $not: { $size: 0 } } },
             { album: { $exists: true, $ne: null } },
           ],
         },
@@ -71,8 +73,8 @@ export const getUser = async (req: Request, res: Response) => {
         path: "likedMusics",
         select: "coverImg title ytId released_at counts duration",
         match: {
-          $or: [
-            { artists: { $exists: true, $ne: [] } },
+          $and: [
+            { artists: { $exists: true, $not: { $size: 0 } } },
             { album: { $exists: true, $ne: null } },
           ],
         },
@@ -93,9 +95,13 @@ export const getUser = async (req: Request, res: Response) => {
       })
       .populate({
         path: "followings.followingAlbums",
-        select: "_id title coverImg followers released_at category",
+        select: "_id title coverImg followers released_at category artists",
+        populate: {
+          path: "artists",
+          select: "_id artistname",
+        },
         match: {
-          artists: { $exists: true, $ne: [] },
+          artists: { $exists: true, $not: { $size: 0 } },
         },
       })
       .populate({
@@ -111,11 +117,12 @@ export const getUser = async (req: Request, res: Response) => {
 
   // 처리 완료
   if (!user) {
-    res.status(422).send({ ok: false, message: "No User", error: false });
+    res
+      .status(422)
+      .send({ ok: false, message: "No User", error: false, type: "NO_DATA" });
     return;
   }
-
-  res.status(200).send({ ok: true, message: "Get User Success", user });
+  res.status(200).send({ ok: true, message: "Get User", user });
 };
 
 // 에러 처리 완료
@@ -133,6 +140,7 @@ export const createUserPlaylist = async (req: Request, res: Response) => {
       ok: false,
       message: "Access Denied",
       error: false,
+      type: "NO_ACCESS",
     });
     return;
   }
@@ -143,15 +151,19 @@ export const createUserPlaylist = async (req: Request, res: Response) => {
       ok: false,
       message: "Invalid user ID format",
       error: false,
+      type: "ERROR_ID",
     });
     return;
   }
 
   // 처리 완료
   if (!title) {
-    res
-      .status(200)
-      .send({ ok: false, message: "Input No Title", error: false });
+    res.status(200).send({
+      ok: false,
+      message: "Input No Title",
+      error: false,
+      type: "NO_INPUT",
+    });
     return;
   }
 
@@ -168,7 +180,9 @@ export const createUserPlaylist = async (req: Request, res: Response) => {
 
   // 처리 완료
   if (!user) {
-    res.status(422).send({ ok: false, message: "No User", error: false });
+    res
+      .status(422)
+      .send({ ok: false, message: "No User", error: false, type: "NO_DATA" });
     return;
   }
 
@@ -227,6 +241,7 @@ export const getUserAllPlaylists = async (req: Request, res: Response) => {
       ok: false,
       message: "Invalid user ID format",
       error: false,
+      type: "ERROR_ID",
     });
     return;
   }
@@ -267,17 +282,20 @@ export const getUserAllPlaylists = async (req: Request, res: Response) => {
 
   // 처리 완료
   if (!user) {
-    res.status(422).send({ ok: false, message: "No User", error: false });
+    res
+      .status(422)
+      .send({ ok: false, message: "No User", error: false, type: "NO_DATA" });
     return;
   }
 
   res.status(200).send({
     ok: true,
-    message: "Get Playlists Success",
+    message: "Get User Playlists",
     playlists: user.playlists,
   });
 };
 
+// 처리 X
 // client
 export const updateUserRecentMusics = async (req: Request, res: Response) => {
   const { userId } = req.params;
@@ -368,6 +386,7 @@ export const updateUserRecentMusics = async (req: Request, res: Response) => {
   res.status(200).send({ ok: true, message: "Add User RecentMusics" });
 };
 
+// 처리 X
 // client
 export const updateLikedMusics = async (req: Request, res: Response) => {
   const { userId } = req.params;
@@ -453,22 +472,21 @@ export const updateLikedMusics = async (req: Request, res: Response) => {
     return;
   }
 
-  res.status(200).send({ ok: true, message: "Update Likes" });
+  res.status(200).send({ ok: true, message: "Update User LikedMusics" });
 };
 
+// 에러 처리 완료
 // client
 export const updateUserFollowers = async (req: Request, res: Response) => {
   const { userId } = req.params;
   const { activeUserId, addList } = req.body;
 
-  console.log("user follow");
-
-  // 처리 필요
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     res.status(404).send({
       ok: false,
       message: "Invalid user ID format",
       error: false,
+      type: "ERROR_ID",
     });
     return;
   }
@@ -478,6 +496,7 @@ export const updateUserFollowers = async (req: Request, res: Response) => {
       ok: false,
       message: "Invalid user ID format",
       error: false,
+      type: "ERROR_ID",
     });
     return;
   }
@@ -487,7 +506,6 @@ export const updateUserFollowers = async (req: Request, res: Response) => {
   try {
     targetUser = await User.findById(userId);
   } catch (error) {
-    // 처리 필요
     console.log(error);
     res
       .status(500)
@@ -496,9 +514,12 @@ export const updateUserFollowers = async (req: Request, res: Response) => {
   }
 
   if (!targetUser) {
-    res
-      .status(422)
-      .send({ ok: false, message: "No Target User", error: false });
+    res.status(422).send({
+      ok: false,
+      message: "No Target User",
+      error: false,
+      type: "NO_DATA",
+    });
     return;
   }
 
@@ -507,7 +528,6 @@ export const updateUserFollowers = async (req: Request, res: Response) => {
   try {
     activeUser = await User.findById(activeUserId);
   } catch (error) {
-    // 처리 필요
     console.log(error);
     res
       .status(500)
@@ -516,9 +536,12 @@ export const updateUserFollowers = async (req: Request, res: Response) => {
   }
 
   if (!activeUser) {
-    res
-      .status(422)
-      .send({ ok: false, message: "No Target Active User", error: false });
+    res.status(422).send({
+      ok: false,
+      message: "No Target Active User",
+      error: false,
+      type: "NO_DATA",
+    });
     return;
   }
 
@@ -552,7 +575,6 @@ export const updateUserFollowers = async (req: Request, res: Response) => {
     }
     await Promise.all([targetUser.save(), activeUser.save()]);
   } catch (error) {
-    // 처리 필요
     console.log(error);
     res
       .status(500)
@@ -560,5 +582,69 @@ export const updateUserFollowers = async (req: Request, res: Response) => {
     return;
   }
 
-  res.status(200).send({ ok: true, message: "Update List" });
+  res.status(200).send({ ok: true, message: "Update User Followers" });
+};
+
+// 에러 처리 완료
+// client
+export const updateUserInfo = async (req: Request, res: Response) => {
+  const { username } = req.body;
+  const userId = req.userId;
+
+  if (!userId) {
+    res.status(404).send({
+      ok: false,
+      message: "No Login",
+      error: false,
+      type: "NO_ACCESS",
+    });
+    return;
+  }
+
+  let user = null;
+
+  try {
+    user = await User.findById(userId);
+  } catch (error) {
+    res.status(500).send({ ok: false, message: "DB Error", error: true });
+    return;
+  }
+
+  if (!user) {
+    res
+      .status(422)
+      .send({ ok: false, message: "No User", error: false, type: "NO_DATA" });
+    return;
+  }
+
+  let checkUser = null;
+
+  try {
+    checkUser = await User.exists({ username });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error", error: true });
+    return;
+  }
+
+  if (checkUser) {
+    res.status(200).send({
+      ok: false,
+      message: "이미 사용 중인 이름입니다.",
+      error: false,
+      type: "INVALID_NAME",
+    });
+    return;
+  }
+
+  try {
+    user.username = username;
+    await user.save();
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ ok: false, message: "DB Error", error: true });
+    return;
+  }
+
+  res.status(200).send({ ok: true, message: "Change User Info" });
 };
