@@ -19,8 +19,11 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    // origin: "https://patrick-stream-front.vercel.app",
-    origin: "http://localhost:5173",
+    origin:
+      process.env.NODE_ENV === "production"
+        ? process.env.FRONT_URL
+        : process.env.FRONT_DEV_URL,
+    // origin: "http://localhost:5173",
     credentials: true,
   })
 );
