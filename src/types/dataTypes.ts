@@ -23,6 +23,7 @@ export interface IAlbumInput {
   introduction: string;
   length: string;
   released_at: string;
+  total_duration: string;
 }
 
 export interface IAlbum {
@@ -32,6 +33,7 @@ export interface IAlbum {
   introduction: string;
   length: number;
   released_at: string;
+  total_duration: number;
 }
 
 export interface IArtistInput {

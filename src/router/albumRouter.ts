@@ -20,7 +20,7 @@ albumRouter.get("/", getAllAlbums);
 
 albumRouter.get("/count", getAlbumsCount);
 
-albumRouter.post("/:albumId/music", addMusic);
+albumRouter.post("/:albumId/music", verifyToken, addMusic);
 albumRouter.delete("/:albumId/music", verifyToken, deleteAlbumMusic);
 
 albumRouter.get("/:albumId/musics", getAlbumMusics);

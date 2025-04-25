@@ -28,8 +28,8 @@ artistRouter.get("/count", getArtistsCount);
 artistRouter.get("/:artistId/musics", getArtistMusics);
 artistRouter.get("/:artistId/albums", getArtistAlbums);
 
-artistRouter.post("/:artistId/music", addMusic);
-artistRouter.post("/:artistId/album", addAlbum);
+artistRouter.post("/:artistId/music", verifyToken, addMusic);
+artistRouter.post("/:artistId/album", verifyToken, addAlbum);
 artistRouter.delete("/:artistId/music", verifyToken, deleteArtistMusic);
 artistRouter.delete("/:artistId/album", verifyToken, deleteArtistAblum);
 

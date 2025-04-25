@@ -32,6 +32,7 @@ export const uploadAlbum = async (
     introduction: albumData.introduction,
     length: +albumData.length,
     released_at: albumData.released_at,
+    total_duration: +albumData.total_duration,
   };
 
   try {
@@ -42,6 +43,7 @@ export const uploadAlbum = async (
       category: newData.category,
       length: newData.length,
       coverImg: newData.coverImg,
+      total_duration: newData.total_duration,
     });
   } catch (error) {
     console.log(error);

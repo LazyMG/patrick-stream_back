@@ -23,7 +23,6 @@ app.use(
       process.env.NODE_ENV === "production"
         ? process.env.FRONT_URL
         : process.env.FRONT_DEV_URL,
-    // origin: "http://localhost:5173",
     credentials: true,
   })
 );
@@ -33,7 +32,7 @@ app.use("/music", musicRouter);
 app.use("/playlist", playlistRouter);
 app.use("/artist", artistRouter);
 app.use("/album", albumRouter);
-app.use("/comment", commentRouter);
+// app.use("/comment", commentRouter);
 app.use("/auth", authRouter);
 app.use("/", globalRouter);
 
